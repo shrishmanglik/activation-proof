@@ -30,6 +30,8 @@ This manifest separates evidence classes. A stronger class never inherits from a
 - Secret scan: known-positive pattern matched before the repository scan returned zero matches.
 - Public-context scan: zero employer, application-package, or retired-brand references.
 - Fresh-clone proof from pushed branch commit `2c3c822a0c483837b922dd0337394c43a3afcc1a`: `npm.cmd ci` installed the lockfile with zero vulnerabilities; 40/40 tests passed; the production build emitted nine routes; and the primary desktop/mobile browser journey passed 6/6. The first install attempt ran from the wrong working directory and exited 1 before installation; it is recorded as harness error and not counted as product proof.
+- First fresh-clone attempt at reviewed remediation commit `4cd73ab3897149c0bfcdea90f06d606312788a3c`: locked install completed with zero vulnerabilities, then the suite failed 93/94 because the RLS policy extractor required LF while Git produced a CRLF checkout. This is valid portability failing-before evidence; the SHA was not accepted as final.
+- Portability remediation: the policy extractor accepts `LF` and `CRLF`, and its test executes both checkout shapes explicitly. A new exact-commit fresh clone and distinct review are required.
 
 ## Distinct review and remediation
 

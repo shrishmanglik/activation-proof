@@ -26,8 +26,10 @@ describe("proposed Supabase persistence boundary", () => {
   });
 
   it("requires tenant membership on both sides of a contract update", () => {
-    const updatePolicy = schema.match(/create policy journey_contracts_owner_update[\s\S]+?;\n/)?.[0] ?? "";
-    expect(updatePolicy.match(/tenant_memberships/g)).toHaveLength(2);
+    for (const checkoutShape of [schema.replace(/\r?\n/g, "\n"), schema.replace(/\r?\n/g, "\r\n")]) {
+      const updatePolicy = checkoutShape.match(/create policy journey_contracts_owner_update[\s\S]+?;\r?\n/)?.[0] ?? "";
+      expect(updatePolicy.match(/tenant_memberships/g)).toHaveLength(2);
+    }
   });
 
   it("uses membership roles for every persistence write boundary", () => {

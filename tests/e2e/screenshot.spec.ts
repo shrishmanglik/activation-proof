@@ -9,6 +9,7 @@ test("captures the recruiter-inspectable overview", async ({ page }) => {
 test("captures the completed workflow at the minimum supported width", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/workspace");
+  await page.getByRole("button", { name: "Seal synthetic contract" }).click();
   await page.getByRole("button", { name: "Run 24 controls" }).click();
   await expect(page.getByRole("heading", { name: "All expected controls behaved correctly" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);

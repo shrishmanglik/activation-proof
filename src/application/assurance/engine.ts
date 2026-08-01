@@ -1,8 +1,19 @@
-import type { AssuranceRun, ControlResult, DetectorEvaluation, SyntheticFixture } from "@/domain/assurance";
+import type { AssuranceRun, ControlResult, Detector, DetectorEvaluation, RequirementId, SyntheticFixture } from "@/domain/assurance";
 import { syntheticFixtures } from "@/domain/fixtures";
 import { detectorRegistry } from "@/detectors";
 import { createReceipt, digest } from "@/evidence/receipt";
 import type { AssuranceService, RunAssuranceRequest } from "@/application/assurance/service";
+import { DenyAllOutboundCapability } from "@/application/assurance/outbound-capability";
+import { compileSyntheticFixtures } from "@/application/assurance/compiler";
+import { verifyJourneyContract } from "@/domain/journey-contract";
+
+const defaultContractDigest = digest({
+  schemaVersion: "JourneyContract.v1",
+  journeyKey: "synthetic-renewal",
+  source: "repository-fixture-adapter",
+  destination: "lifecycle-simulator",
+  dataClass: "SYNTHETIC",
+});
 
 function unavailableDetector(fixture: SyntheticFixture): DetectorEvaluation {
   return {
@@ -17,32 +28,58 @@ function unavailableDetector(fixture: SyntheticFixture): DetectorEvaluation {
       recovery: "Restore the declared detector before making a clean-state claim.",
     }],
     externalCallCount: 0,
+    outboundAttemptCount: 0,
   };
 }
 
-export function executeSyntheticCorpus(fixtures: SyntheticFixture[] = syntheticFixtures): AssuranceRun {
+export interface ExecutionOptions {
+  contractDigest?: string;
+  detectors?: ReadonlyMap<RequirementId, Detector>;
+}
+
+export function executeSyntheticCorpus(fixtures: SyntheticFixture[] = syntheticFixtures, options: ExecutionOptions = {}): AssuranceRun {
+  const contractDigest = options.contractDigest ?? defaultContractDigest;
+  const detectors = options.detectors ?? detectorRegistry;
   const results: ControlResult[] = fixtures.map((fixture) => {
-    const detector = detectorRegistry.get(fixture.requirementId);
-    const evaluation = detector?.evaluate(fixture) ?? unavailableDetector(fixture);
-    const receipt = createReceipt(fixture, evaluation);
+    const detector = detectors.get(fixture.requirementId);
+    const outbound = new DenyAllOutboundCapability();
+    let evaluation: DetectorEvaluation;
+    try {
+      evaluation = detector?.evaluate(fixture, { outbound }) ?? unavailableDetector(fixture);
+    } catch (caught) {
+      evaluation = {
+        ...unavailableDetector(fixture),
+        findings: [{
+          code: "DETECTOR_EXECUTION_BLOCKED",
+          message: caught instanceof Error ? caught.message : "Detector execution failed.",
+          recovery: "Keep promotion blocked and inspect the detector capability boundary.",
+        }],
+        outboundAttemptCount: outbound.attemptCount,
+      };
+    }
+    evaluation = { ...evaluation, externalCallCount: outbound.successfulCallCount, outboundAttemptCount: outbound.attemptCount };
+    const receipt = outbound.attemptCount === 0 ? createReceipt(fixture, evaluation, contractDigest) : null;
     return {
       fixture,
       evaluation,
       receipt,
-      expectationMet: evaluation.decision === fixture.expectedDecision,
+      expectationMet: receipt !== null && evaluation.decision === fixture.expectedDecision,
+      outboundAttemptCount: outbound.attemptCount,
     };
   });
 
-  const normalized = results.map(({ receipt, expectationMet }) => ({ receipt, expectationMet }));
+  const normalized = results.map(({ fixture, receipt, expectationMet, outboundAttemptCount }) => ({ fixtureId: fixture.fixtureId, receipt, expectationMet, outboundAttemptCount }));
   const evidenceDigest = digest(normalized);
   const terminalState = results.every((result) => result.expectationMet) ? "PASSED" : "FAILED";
+  const externalCallCount = results.reduce((total, result) => total + result.evaluation.externalCallCount, 0);
 
   return {
     schemaVersion: "AssuranceRun.v1",
     runId: `run_${evidenceDigest.slice(-16)}`,
     fixtureCorpus: "synthetic-renewal-v1",
+    contractDigest,
     executionMode: "OFFLINE_DETERMINISTIC",
-    externalCallCount: 0,
+    externalCallCount,
     terminalState,
     results,
     evidenceDigest,
@@ -55,6 +92,7 @@ export function executeSyntheticCorpus(fixtures: SyntheticFixture[] = syntheticF
 export class DeterministicAssuranceService implements AssuranceService {
   async run(request: RunAssuranceRequest): Promise<AssuranceRun> {
     if (request.fixtureCorpus !== "synthetic-renewal-v1") throw new Error("FIXTURE_CORPUS_NOT_ALLOWED");
-    return executeSyntheticCorpus();
+    if (!verifyJourneyContract(request.contract)) throw new Error("CONTRACT_DIGEST_INVALID");
+    return executeSyntheticCorpus(compileSyntheticFixtures(request.contract), { contractDigest: request.contract.contractDigest });
   }
 }

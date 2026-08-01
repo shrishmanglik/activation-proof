@@ -19,4 +19,14 @@ describe("proposed Supabase persistence boundary", () => {
   it("revokes anonymous access to all application tables", () => {
     expect(schema).toContain("revoke all on public.tenant_memberships, public.journey_contracts, public.assurance_runs, public.decision_receipts from anon");
   });
+
+  it("binds every child relationship to the same tenant", () => {
+    expect(schema).toContain("foreign key (tenant_id, journey_contract_id) references public.journey_contracts(tenant_id, id)");
+    expect(schema).toContain("foreign key (tenant_id, assurance_run_id) references public.assurance_runs(tenant_id, id)");
+  });
+
+  it("requires tenant membership on both sides of a contract update", () => {
+    const updatePolicy = schema.match(/create policy journey_contracts_owner_update[\s\S]+?;\n/)?.[0] ?? "";
+    expect(updatePolicy.match(/tenant_memberships/g)).toHaveLength(2);
+  });
 });

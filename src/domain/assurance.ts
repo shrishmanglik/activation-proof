@@ -43,7 +43,18 @@ export interface DetectorEvaluation {
   decision: Decision;
   health: DetectorHealth;
   findings: DetectorFinding[];
-  externalCallCount: 0;
+  externalCallCount: number;
+  outboundAttemptCount: number;
+}
+
+export interface OutboundCapability {
+  readonly attemptCount: number;
+  readonly successfulCallCount: number;
+  request(operation: string): never;
+}
+
+export interface EvaluationContext {
+  outbound: OutboundCapability;
 }
 
 export interface EvidenceReceipt {
@@ -57,7 +68,12 @@ export interface EvidenceReceipt {
   detectorHealth: DetectorHealth;
   issueCodes: string[];
   findingCount: number;
-  externalCallCount: 0;
+  fixtureInputDigest: string;
+  scenarioDigest: string;
+  decisionTraceDigest: string;
+  contractDigest: string;
+  externalCallCount: number;
+  outboundAttemptCount: number;
   dataClass: "SYNTHETIC";
   evidenceDigest: string;
 }
@@ -65,16 +81,18 @@ export interface EvidenceReceipt {
 export interface ControlResult {
   fixture: SyntheticFixture;
   evaluation: DetectorEvaluation;
-  receipt: EvidenceReceipt;
+  receipt: EvidenceReceipt | null;
   expectationMet: boolean;
+  outboundAttemptCount: number;
 }
 
 export interface AssuranceRun {
   schemaVersion: "AssuranceRun.v1";
   runId: string;
   fixtureCorpus: "synthetic-renewal-v1";
+  contractDigest: string;
   executionMode: "OFFLINE_DETERMINISTIC";
-  externalCallCount: 0;
+  externalCallCount: number;
   terminalState: "PASSED" | "FAILED";
   results: ControlResult[];
   evidenceDigest: string;
@@ -85,5 +103,5 @@ export interface Detector {
   requirementId: RequirementId;
   detectorId: `DET-${RequirementId}`;
   version: string;
-  evaluate(fixture: SyntheticFixture): DetectorEvaluation;
+  evaluate(fixture: SyntheticFixture, context: EvaluationContext): DetectorEvaluation;
 }

@@ -6,27 +6,36 @@ Status: implemented local vertical; production capability absent.
 
 ```text
 Next.js UI
+  -> POST /api/v1/journey-contracts
+    -> seal JourneyContract.v1 + contract digest
   -> POST /api/v1/assurance-runs
-    -> AssuranceService interface
-      -> DeterministicAssuranceService
-        -> detector registry (12 pure controls)
-        -> evidence receipt builder (canonical JSON + SHA-256)
-        -> synthetic fixture adapter
+    -> compile sealed contract into 24 paired controls
+      -> AssuranceService interface
+        -> DeterministicAssuranceService
+          -> detector registry (12 controls)
+          -> injected deny-all outbound capability
+          -> evidence receipt builder (canonical input + trace + SHA-256)
+  -> POST /api/v1/handoff-bundles/replay
+    -> verify contract and bundle digests
+      -> deterministic recompile and exact run-digest match
 
 Optional future persistence
   -> reviewed Supabase migration
   -> tenant-scoped RLS on every table
+  -> tenant-consistent composite foreign keys
   -> not connected or applied
 ```
 
-The UI cannot instantiate a provider adapter. The only executable corpus is the repository-owned `synthetic-renewal-v1` fixture set. The API rejects other corpus names with a typed `422 FIXTURE_CORPUS_NOT_ALLOWED` response.
+The UI cannot instantiate a provider adapter. A user can author only a bounded, explicitly `SYNTHETIC` `JourneyContract.v1`; the compiler maps its permitted fields into a fixed 24-control corpus. The API rejects unsealed, tampered, or out-of-bound contracts with typed errors.
 
 ## Typed contracts
 
 - `SyntheticFixture`: declared requirement, detector, control kind, expected decision, synthetic classification, and typed control data.
+- `JourneyContract.v1`: bounded synthetic intake, workflow state, role slots, rollback contract, and canonical digest.
 - `DetectorEvaluation`: business decision and detector health remain separate.
-- `DecisionReceipt.v1`: immutable normalized evidence with issue codes, external-call count, data class, and SHA-256 digest.
+- `DecisionReceipt.v1`: immutable normalized evidence bound to normalized fixture input, scenario, decision trace, contract, measured outbound attempts, and SHA-256 digest.
 - `AssuranceRun.v1`: one complete 24-control execution with terminal state, run digest, and one next action.
+- `HandoffBundle.v1`: sealed contract, run, receipts, recovery/replay instructions, and bundle digest for deterministic replay by a non-builder operator.
 - `AssuranceService`: application boundary between HTTP and deterministic domain execution.
 
 ## Deterministic / AI / human split
@@ -39,15 +48,17 @@ The UI cannot instantiate a provider adapter. The only executable corpus is the 
 
 ## Persistence proposal
 
-`supabase/migrations/202608010001_activation_proof.sql` describes four tables: memberships, journey contracts, assurance runs, and decision receipts. RLS is enabled on every table, anonymous grants are revoked, and tenant access is mediated by the authenticated membership relation. This is source-level architecture only. No database has been created or modified.
+`supabase/migrations/202608010001_activation_proof.sql` describes four tables: memberships, journey contracts, assurance runs, and decision receipts. RLS is enabled on every table, anonymous grants are revoked, and tenant access is mediated by the authenticated membership relation. Composite foreign keys make it impossible for a child row to reference a parent in another tenant. A pure authorization-matrix test exercises owner, operator, reviewer, outsider, anonymous, and wrong-tenant decisions. This is source-level architecture only. No database has been created or modified.
 
 ## Failure, retry, and rollback
 
 - Malformed or undeclared API input fails closed with typed errors.
 - A detector absence yields `UNKNOWN` / `UNHEALTHY`, never a clean pass.
+- Any outbound capability attempt increments a measured counter, fails the run, and prevents receipt sealing before a network call exists.
 - Timeout after possible provider commit is represented by the CV-R7 indeterminate-state control; blind retry is rejected.
 - Release prerequisites require exact digest equality, two distinct approvers, and rollback proof.
-- The UI supports cancellation and retry while retaining the last completed evidence.
+- The UI supports cancellation and retry while retaining the last completed evidence; contract changes invalidate the prior run and bundle.
+- Exported handoffs include deterministic replay and recovery steps; replay rejects a tampered contract or bundle before comparison.
 - The proposed SQL rollback is review-only and explicitly destructive; it is never automatically executed.
 
 ## Claim ceiling

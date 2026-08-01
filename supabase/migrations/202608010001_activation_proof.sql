@@ -19,26 +19,29 @@ create table public.journey_contracts (
   contract_json jsonb not null,
   owner_id uuid not null references auth.users(id),
   created_at timestamptz not null default now(),
-  unique (tenant_id, contract_key, version)
+  unique (tenant_id, contract_key, version),
+  unique (tenant_id, id)
 );
 
 create table public.assurance_runs (
   id uuid primary key default gen_random_uuid(),
   tenant_id uuid not null,
-  journey_contract_id uuid not null references public.journey_contracts(id),
+  journey_contract_id uuid not null,
   corpus_digest text not null check (corpus_digest like 'sha256:%'),
   engine_version text not null,
   terminal_state text not null check (terminal_state in ('QUEUED', 'RUNNING', 'BLOCKED', 'INDETERMINATE', 'PASSED', 'FAILED', 'CANCELLED')),
   evidence_digest text check (evidence_digest is null or evidence_digest like 'sha256:%'),
   created_by uuid not null references auth.users(id),
   created_at timestamptz not null default now(),
-  unique (tenant_id, journey_contract_id, corpus_digest, engine_version)
+  unique (tenant_id, journey_contract_id, corpus_digest, engine_version),
+  unique (tenant_id, id),
+  foreign key (tenant_id, journey_contract_id) references public.journey_contracts(tenant_id, id)
 );
 
 create table public.decision_receipts (
   id uuid primary key default gen_random_uuid(),
   tenant_id uuid not null,
-  assurance_run_id uuid not null references public.assurance_runs(id),
+  assurance_run_id uuid not null,
   fixture_id text not null,
   requirement_id text not null,
   detector_id text not null,
@@ -47,7 +50,8 @@ create table public.decision_receipts (
   evidence_digest text not null check (evidence_digest like 'sha256:%'),
   receipt_json jsonb not null,
   created_at timestamptz not null default now(),
-  unique (tenant_id, assurance_run_id, fixture_id)
+  unique (tenant_id, assurance_run_id, fixture_id),
+  foreign key (tenant_id, assurance_run_id) references public.assurance_runs(tenant_id, id)
 );
 
 alter table public.tenant_memberships enable row level security;
@@ -63,7 +67,9 @@ create policy journey_contracts_tenant_read on public.journey_contracts
 create policy journey_contracts_owner_write on public.journey_contracts
   for insert with check (owner_id = auth.uid() and tenant_id in (select tenant_id from public.tenant_memberships where user_id = auth.uid()));
 create policy journey_contracts_owner_update on public.journey_contracts
-  for update using (owner_id = auth.uid()) with check (owner_id = auth.uid());
+  for update
+  using (owner_id = auth.uid() and tenant_id in (select tenant_id from public.tenant_memberships where user_id = auth.uid()))
+  with check (owner_id = auth.uid() and tenant_id in (select tenant_id from public.tenant_memberships where user_id = auth.uid()));
 
 create policy assurance_runs_tenant_read on public.assurance_runs
   for select using (tenant_id in (select tenant_id from public.tenant_memberships where user_id = auth.uid()));

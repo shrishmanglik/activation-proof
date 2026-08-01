@@ -26,14 +26,14 @@ The primary user hypothesis is a MarTech solutions architect accountable for a m
 
 ## The implemented workflow
 
-1. Open the synthetic renewal contract in `/workspace`.
-2. Inspect the source → decision → destination simulator → evidence boundary.
-3. Run 12 known-bad controls before 12 paired clean controls.
-4. Verify all 24 expected decisions and exactly zero external calls.
-5. Repeat the corpus and compare the stable SHA-256 run digest.
-6. Disable the critical consent detector and prove its control suite fails.
-7. Restore the detector and prove the same suite passes.
-8. Inspect recovery, RLS proposal, connection boundaries, and redacted receipts.
+1. Author and seal a bounded, synthetic journey contract in `/workspace`.
+2. Run 12 known-bad controls before 12 paired clean controls compiled from that contract.
+3. Verify all 24 expected decisions, measured outbound attempts, and external calls.
+4. Export a digest-bound handoff bundle with the contract, run, receipts, and recovery steps.
+5. Replay the handoff through the typed API and require an exact digest match.
+6. Mutate contract input without changing issue shape and prove the receipt and run digests change.
+7. Disable the critical consent detector and prove its control suite fails; restore it and run the control twice.
+8. Inspect recovery, tenant-integrity schema, connection boundaries, and redacted receipts.
 
 No step contacts a provider or customer.
 
@@ -41,14 +41,17 @@ No step contacts a provider or customer.
 
 ```text
 Next.js 16 UI
-  -> typed assurance API
-    -> AssuranceService
-      -> 12 deterministic detector modules
-      -> repository-owned synthetic fixtures
-      -> canonical decision receipts + SHA-256 digest
+  -> typed journey-contract API
+    -> sealed JourneyContract.v1
+      -> contract compiler
+        -> AssuranceService
+          -> 12 deterministic detector modules
+          -> deny-all outbound capability
+          -> canonical input/trace-bound receipts
+          -> exportable and replayable HandoffBundle.v1
 
 Optional, not connected:
-  Supabase schema -> RLS on every table -> tenant-scoped policies
+  Supabase schema -> RLS on every table -> tenant-consistent composite references
 ```
 
 See [architecture](docs/ARCHITECTURE.md), [security/privacy](docs/SECURITY.md), and the [operator runbook](docs/OPERATIONS.md).
@@ -67,11 +70,12 @@ Every control emits `DecisionReceipt.v1` with:
 - detector version and health;
 - business decision (`PASS`, `REJECT`, or `UNKNOWN`);
 - issue codes and finding count;
-- `externalCallCount: 0`;
+- fixture-input, scenario, decision-trace, and contract digests;
+- measured `outboundAttemptCount` and `externalCallCount`;
 - `dataClass: SYNTHETIC`;
 - stable SHA-256 evidence digest.
 
-Detector health and business result are different fields. A broken detector can never turn an empty result into a clean claim.
+Detector health and business result are different fields. A broken detector can never turn an empty result into a clean claim. Receipt sealing is refused if any detector attempts to use the injected outbound capability.
 
 ## Local setup
 
@@ -84,7 +88,7 @@ npm.cmd ci
 npm.cmd run dev
 ```
 
-Open `http://localhost:3000` and choose **Run the synthetic proof**. No environment variable is required.
+Open `http://localhost:3000`, choose **Run the synthetic proof**, seal the contract, run the proof, download the handoff, and replay it. No environment variable is required.
 
 ## Tests and proof commands
 
@@ -112,9 +116,10 @@ Exact command outputs and evidence-class boundaries are recorded in the [build e
 
 - Synthetic fixtures only; example identifiers are explicitly tokenized and non-personal.
 - No credential entry or secret read path.
-- No external request from the assurance engine.
+- Detectors receive a deny-all outbound capability; attempts are measured, fail the run, and prevent receipt sealing.
+- Lint rules also reject direct network globals and imports in detector source.
 - No production adapter, webhook, customer-contact path, or blind retry.
-- The optional Supabase migration enables RLS on every application table and revokes anonymous access; it has not been applied to a provider.
+- The optional Supabase migration enables RLS on every application table, revokes anonymous access, and uses tenant-consistent composite foreign keys; it has not been applied to a provider.
 - Export controls reject raw email/access-token field classes, unresolved ownerless exceptions, and missing replay instructions.
 
 ## Commercial hypothesis—not evidence
@@ -126,11 +131,14 @@ The hypothesis is that a bounded assurance engagement for one high-value cross-p
 | Capability | State |
 | --- | --- |
 | Responsive recruiter-inspectable UI and primary workflow | Implemented locally |
+| Authorable and sealed synthetic journey contract | Implemented locally |
 | 12 P0 deterministic detectors / 24 synthetic controls | Implemented locally |
-| Stable evidence and second-run digest | Implemented locally |
+| Input/trace/contract-bound evidence and second-run digest | Implemented locally |
+| Exportable handoff bundle and exact deterministic replay | Implemented locally |
+| Deny-all outbound capability with attempted-call mutation test | Implemented locally |
 | Critical consent-detector mutation control | Implemented locally |
-| Typed API allowlisting the synthetic corpus | Implemented locally |
-| Supabase schema and table-by-table RLS policies | Source proposal; not applied |
+| Typed contract, assurance, and replay APIs | Implemented locally |
+| Supabase schema, tenant-consistent references, and table-by-table RLS | Source proposal; not applied |
 | Authentication and tenant provisioning | Proposed |
 | CDP, lifecycle, warehouse, analytics, or collaboration integrations | Proposed; not connected |
 | AI assistance | Proposed; absent from authoritative path |

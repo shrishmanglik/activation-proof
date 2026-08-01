@@ -14,6 +14,7 @@ export function evaluation(
     health,
     findings,
     externalCallCount: 0,
+    outboundAttemptCount: 0,
   };
 }
 

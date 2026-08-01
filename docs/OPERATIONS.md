@@ -7,7 +7,7 @@ npm.cmd ci
 npm.cmd run dev
 ```
 
-Open `http://localhost:3000/workspace`, run the 24 controls, and inspect the bad and clean receipts. The expected result is 24/24 expectations met, zero external calls, and one stable run digest.
+Open `http://localhost:3000/workspace`, author and seal the synthetic contract, run the 24 controls, download the handoff bundle, and replay it. The expected result is 24/24 expectations met, zero outbound attempts, zero external calls, and an exact replay digest match.
 
 ## Verification
 
@@ -20,7 +20,7 @@ npm.cmd run build
 npm.cmd run e2e
 ```
 
-Run the complete corpus twice and compare `evidenceDigest`. The test suite enforces the equality.
+Run the complete corpus twice and compare `evidenceDigest`. The test suite enforces equality for identical input and inequality after a semantic input mutation that preserves the finding shape.
 
 ## Critical mutation control
 
@@ -35,11 +35,15 @@ npm.cmd run control:consent
 
 Expected: the first command exits non-zero because the opted-out bad fixture escapes; the restored command exits zero.
 
+The security suite also injects a detector that attempts to use the outbound capability. Expected: the attempt counter is one, the underlying call counter remains zero, the run fails, and no receipt is sealed.
+
 ## Recovery
 
 - UI request failure: no result is promoted; retry preserves the prior completed receipt.
 - Cancelled run: partial results are discarded.
+- Contract change: the prior run and handoff are invalidated; seal and execute the new contract.
 - Detector unhealthy: keep promotion blocked and repair the named detector.
+- Handoff replay mismatch or digest failure: reject the bundle; return to the sealed contract and create a new run rather than editing evidence.
 - Digest drift or missing rollback: retain the last accepted contract; do not authorize sandbox action.
 - Indeterminate provider state in a future adapter: query by stable operation key; never blind retry.
 - Persistence rollback: review `supabase/rollback/202608010001_activation_proof.down.sql`, preserve evidence first, and require separate provider authority. It is not an automatic recovery command.

@@ -20,8 +20,9 @@ describe("synthetic negative-before-positive controls", () => {
     const result = byFixture.get(fixture.fixtureId);
     expect(result?.evaluation.decision).toBe(fixture.expectedDecision);
     expect(result?.expectationMet).toBe(true);
-    expect(result?.receipt.externalCallCount).toBe(0);
-    expect(result?.receipt.dataClass).toBe("SYNTHETIC");
+    expect(result?.receipt?.externalCallCount).toBe(0);
+    expect(result?.receipt?.outboundAttemptCount).toBe(0);
+    expect(result?.receipt?.dataClass).toBe("SYNTHETIC");
   });
 
   it("runs all 24 controls and seals a passing corpus", () => {
@@ -37,6 +38,18 @@ describe("repeatability", () => {
     const second = executeSyntheticCorpus();
     expect(second.evidenceDigest).toBe(first.evidenceDigest);
     expect(second.runId).toBe(first.runId);
-    expect(second.results.map((result) => result.receipt.evidenceDigest)).toEqual(first.results.map((result) => result.receipt.evidenceDigest));
+    expect(second.results.map((result) => result.receipt?.evidenceDigest)).toEqual(first.results.map((result) => result.receipt?.evidenceDigest));
+  });
+
+  it("changes the sealed receipt and run digests when semantic input changes but issue shape does not", () => {
+    const original = structuredClone(syntheticFixtures.find((fixture) => fixture.fixtureId === "CV-R2-BAD")!);
+    const mutated = structuredClone(original);
+    mutated.data = { ...(mutated.data as Record<string, unknown>), sourceValue: 2099 };
+    const first = executeSyntheticCorpus([original]);
+    const second = executeSyntheticCorpus([mutated]);
+    expect(first.results[0].evaluation.findings.map((finding) => finding.code)).toEqual(second.results[0].evaluation.findings.map((finding) => finding.code));
+    expect(first.results[0].receipt?.fixtureInputDigest).not.toBe(second.results[0].receipt?.fixtureInputDigest);
+    expect(first.results[0].receipt?.evidenceDigest).not.toBe(second.results[0].receipt?.evidenceDigest);
+    expect(first.evidenceDigest).not.toBe(second.evidenceDigest);
   });
 });

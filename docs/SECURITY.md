@@ -3,12 +3,13 @@
 ## Implemented controls
 
 - Synthetic and tokenized fixtures only.
-- Exactly zero external calls in every detector receipt.
+- A deny-all outbound capability is injected into every detector; attempts are counted before refusal, fail the run, and prevent receipt sealing.
+- Detector-specific lint rules reject direct `fetch` use and Node/network client imports.
 - No credential entry UI, production adapter, webhook, or customer contact path.
 - Typed API allowlist for the one repository-owned fixture corpus.
 - Restricted handoff-field detector covering raw email and access-token field classes.
-- Optional Supabase schema enables RLS on every application table and revokes anonymous access.
-- CI and local tests inspect the table-to-RLS mapping.
+- Optional Supabase schema enables RLS on every application table, revokes anonymous access, and uses tenant-consistent composite foreign keys.
+- Local tests inspect the table-to-RLS mapping and exercise an executable tenant/role authorization matrix.
 
 ## Deliberately absent
 

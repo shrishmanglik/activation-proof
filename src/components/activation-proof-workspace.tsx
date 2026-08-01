@@ -3,6 +3,8 @@
 import { useRef, useState } from "react";
 import { Ban, CheckCircle2, CircleDashed, Play, RotateCcw, ShieldCheck, Square } from "lucide-react";
 import type { AssuranceRun } from "@/domain/assurance";
+import type { HandoffBundle, ReplayReceipt } from "@/domain/handoff";
+import type { JourneyContract, JourneyContractInput } from "@/domain/journey-contract";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,10 +14,47 @@ type RunState = "IDLE" | "RUNNING" | "SUCCESS" | "ERROR" | "CANCELLED";
 export function ActivationProofWorkspace() {
   const [state, setState] = useState<RunState>("IDLE");
   const [run, setRun] = useState<AssuranceRun | null>(null);
+  const [contract, setContract] = useState<JourneyContract | null>(null);
+  const [handoffBundle, setHandoffBundle] = useState<HandoffBundle | null>(null);
+  const [replayReceipt, setReplayReceipt] = useState<ReplayReceipt | null>(null);
+  const [contractError, setContractError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const controllerRef = useRef<AbortController | null>(null);
 
+  async function sealContract(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setContractError(null);
+    const form = new FormData(event.currentTarget);
+    const input: JourneyContractInput = {
+      schemaVersion: "JourneyContract.v1",
+      dataClass: "SYNTHETIC",
+      journeyKey: String(form.get("journeyKey")),
+      sourceSystem: String(form.get("sourceSystem")),
+      destinationSystem: String(form.get("destinationSystem")),
+      ownerRole: String(form.get("ownerRole")),
+      requiredFields: ["order_id", "value", "currency"],
+      currency: "CAD",
+      conversionDivisor: 100,
+      identityPolicyVersion: String(form.get("identityPolicyVersion")),
+      consentPolicyVersion: String(form.get("consentPolicyVersion")),
+      stateSequence: ["subscription_started", "renewal_completed"],
+      rollbackProcedure: String(form.get("rollbackProcedure")),
+      approverRoles: ["architecture_reviewer", "privacy_reviewer"],
+    };
+    const response = await fetch("/api/v1/journey-contracts", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) });
+    if (!response.ok) {
+      setContractError("The contract failed local validation. Use slug-shaped system and role identifiers and a concrete rollback procedure.");
+      return;
+    }
+    const body = await response.json() as { contract: JourneyContract };
+    setContract(body.contract);
+    setRun(null);
+    setHandoffBundle(null);
+    setReplayReceipt(null);
+  }
+
   async function startRun() {
+    if (!contract) return;
     controllerRef.current?.abort();
     const controller = new AbortController();
     controllerRef.current = controller;
@@ -25,12 +64,14 @@ export function ActivationProofWorkspace() {
       const response = await fetch("/api/v1/assurance-runs", {
         method: "POST",
         headers: { "content-type": "application/json", "x-request-id": "ui-synthetic-renewal-v1" },
-        body: JSON.stringify({ fixtureCorpus: "synthetic-renewal-v1" }),
+        body: JSON.stringify({ fixtureCorpus: "synthetic-renewal-v1", contract }),
         signal: controller.signal,
       });
       if (!response.ok) throw new Error(`Run failed with HTTP ${response.status}`);
-      const body = await response.json() as { run: AssuranceRun };
+      const body = await response.json() as { run: AssuranceRun; handoffBundle: HandoffBundle };
       setRun(body.run);
+      setHandoffBundle(body.handoffBundle);
+      setReplayReceipt(null);
       setState("SUCCESS");
     } catch (caught) {
       if (controller.signal.aborted) {
@@ -46,15 +87,55 @@ export function ActivationProofWorkspace() {
     controllerRef.current?.abort();
   }
 
+  function downloadHandoff() {
+    if (!handoffBundle) return;
+    const blob = new Blob([JSON.stringify(handoffBundle, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${handoffBundle.contract.journeyKey}-handoff.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function replayHandoff() {
+    if (!handoffBundle) return;
+    const response = await fetch("/api/v1/handoff-bundles/replay", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(handoffBundle) });
+    const body = await response.json() as { receipt: ReplayReceipt };
+    setReplayReceipt(body.receipt);
+  }
+
   const badResults = run?.results.filter((result) => result.fixture.controlKind === "NEGATIVE") ?? [];
   const goodResults = run?.results.filter((result) => result.fixture.controlKind === "POSITIVE") ?? [];
 
   return (
     <div className="mt-10 space-y-6" aria-busy={state === "RUNNING"}>
+      <Card>
+        <CardHeader>
+          <div className="flex flex-wrap items-center justify-between gap-3"><Badge tone="evidence">STEP 1 · AUTHORITATIVE LOCAL INTAKE</Badge><Badge tone="neutral">SYNTHETIC DATA ONLY</Badge></div>
+          <CardTitle className="mt-4 text-2xl">Version the journey contract</CardTitle>
+          <CardDescription>This contract becomes the input authority for compilation, receipts, export, and replay. Role identifiers describe review slots; they do not claim two humans have approved a release.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form className="grid gap-4 md:grid-cols-2" onSubmit={sealContract}>
+            {[
+              ["journeyKey", "Journey key", "renewal-assurance"],
+              ["ownerRole", "Accountable owner role", "journey_architect"],
+              ["sourceSystem", "Source system", "fixture-cdp"],
+              ["destinationSystem", "Destination system", "lifecycle-simulator"],
+              ["identityPolicyVersion", "Identity policy", "identity-v1"],
+              ["consentPolicyVersion", "Consent policy", "consent-v1"],
+            ].map(([name, label, value]) => <label className="grid gap-2 text-sm font-semibold" key={name}>{label}<input className="min-h-11 rounded-lg border border-[var(--border-strong)] bg-white px-3 font-normal" name={name} defaultValue={value} required /></label>)}
+            <label className="grid gap-2 text-sm font-semibold md:col-span-2">Rollback procedure<textarea className="min-h-24 rounded-lg border border-[var(--border-strong)] bg-white p-3 font-normal" name="rollbackProcedure" defaultValue="Restore the last accepted contract digest and replay the clean synthetic corpus." required /></label>
+            <div className="flex flex-wrap items-center gap-3 md:col-span-2"><Button type="submit">Seal synthetic contract</Button>{contract && <Badge tone="pass">REVIEW_READY · {contract.contractDigest.slice(0, 21)}…</Badge>}</div>
+            {contractError && <p className="text-sm text-[var(--fail)] md:col-span-2" role="alert">{contractError}</p>}
+          </form>
+        </CardContent>
+      </Card>
       <div className="grid gap-5 lg:grid-cols-[1fr_0.78fr]">
         <Card>
           <CardHeader>
-            <div className="flex flex-wrap items-center justify-between gap-3"><Badge tone="evidence">SYNTHETIC-RENEWAL-V1</Badge><Badge tone="neutral">OFFLINE DETERMINISTIC</Badge></div>
+            <div className="flex flex-wrap items-center justify-between gap-3"><Badge tone="evidence">STEP 2 · SYNTHETIC-RENEWAL-V1</Badge><Badge tone="neutral">OFFLINE DETERMINISTIC</Badge></div>
             <CardTitle className="mt-5 text-2xl">Renewal migration assurance</CardTitle>
             <CardDescription>Versioned source contract, cents-to-CAD mapping, identity and consent policy, renewal state machine, lifecycle simulator, parity comparator, and redacted handoff.</CardDescription>
           </CardHeader>
@@ -63,7 +144,7 @@ export function ActivationProofWorkspace() {
               {[["Source", "Purchase + renewal events"], ["Decision", "Identity + consent"], ["Destination", "Lifecycle simulator"], ["Evidence", "Receipt + recovery"]].map(([label, copy], index) => <li className="rounded-xl border border-[var(--border)] bg-[var(--surface-raised)] p-3" key={label}><span className="font-mono text-xs font-bold text-[var(--pass)]">0{index + 1}</span><strong className="mt-2 block text-sm">{label}</strong><span className="mt-1 block text-xs leading-5 text-[var(--text-muted)]">{copy}</span></li>)}
             </ol>
             <div className="mt-6 flex flex-wrap gap-3">
-              <Button onClick={startRun} disabled={state === "RUNNING"}><Play aria-hidden="true" size={17} /> {run ? "Run again" : "Run 24 controls"}</Button>
+              <Button onClick={startRun} disabled={state === "RUNNING" || !contract}><Play aria-hidden="true" size={17} /> {run ? "Run again" : "Run 24 controls"}</Button>
               {state === "RUNNING" && <Button variant="outline" onClick={cancelRun}><Square aria-hidden="true" size={16} /> Cancel safely</Button>}
               {state === "ERROR" && <Button variant="outline" onClick={startRun}><RotateCcw aria-hidden="true" size={17} /> Retry</Button>}
             </div>
@@ -106,6 +187,10 @@ export function ActivationProofWorkspace() {
             <ResultGroup title="Bad controls" description="Seeded defects must be rejected." results={badResults} />
             <ResultGroup title="Clean controls" description="Only the approved synthetic contract may pass." results={goodResults} />
           </div>
+          {handoffBundle && <Card>
+            <CardHeader><div className="flex flex-wrap items-center justify-between gap-3"><Badge tone="evidence">STEP 3 · REDACTED HANDOFF</Badge><Badge tone="neutral">LOCAL REPLAY ONLY</Badge></div><CardTitle className="mt-4">Export and replay without the builder</CardTitle><CardDescription>The bundle embeds the exact contract, all sealed receipts, recovery, and deterministic replay steps. A separate operator can verify it through the documented replay endpoint.</CardDescription></CardHeader>
+            <CardContent><div className="flex flex-wrap gap-3"><Button variant="outline" onClick={downloadHandoff}>Download JSON handoff</Button><Button onClick={replayHandoff}>Replay sealed handoff</Button></div>{replayReceipt && <p className="mt-4 text-sm" role="status"><Badge tone={replayReceipt.decision === "MATCH" ? "pass" : "fail"}>{replayReceipt.decision}</Badge> <span className="ml-2 text-[var(--text-muted)]">{replayReceipt.reason} · {replayReceipt.replayRunDigest?.slice(0, 21) ?? "no replay digest"}…</span></p>}</CardContent>
+          </Card>}
         </section>
       )}
     </div>
@@ -122,7 +207,7 @@ function ResultGroup({ title, description, results }: { title: string; descripti
             <span><strong className="block text-sm">{result.fixture.requirementId}</strong><span className="mt-1 block text-xs text-[var(--text-muted)]">{result.evaluation.detectorId}</span></span>
             <span className="flex items-center gap-2"><Badge tone={result.evaluation.health === "HEALTHY" ? "pass" : "fail"}>{result.evaluation.health}</Badge><Badge tone={result.evaluation.decision === "PASS" ? "pass" : result.evaluation.decision === "REJECT" ? "fail" : "unknown"}>{result.evaluation.decision}</Badge></span>
           </summary>
-          <div className="mt-3 border-t border-[var(--border)] pt-3 text-sm leading-6 text-[var(--text-muted)]"><p>{result.fixture.scenario}</p><p className="mt-2 font-mono text-xs break-all">{result.receipt.evidenceDigest}</p>{result.evaluation.findings.map((item) => <p className="mt-2 text-[var(--fail)]" key={`${item.code}-${item.field ?? "root"}`}>{item.code}: {item.message}</p>)}</div>
+          <div className="mt-3 border-t border-[var(--border)] pt-3 text-sm leading-6 text-[var(--text-muted)]"><p>{result.fixture.scenario}</p><p className="mt-2 font-mono text-xs break-all">{result.receipt?.evidenceDigest ?? "UNSEALED — outbound capability attempt or detector failure"}</p>{result.evaluation.findings.map((item) => <p className="mt-2 text-[var(--fail)]" key={`${item.code}-${item.field ?? "root"}`}>{item.code}: {item.message}</p>)}</div>
         </details>)}
       </CardContent>
     </Card>

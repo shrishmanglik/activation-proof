@@ -31,7 +31,7 @@ This manifest separates evidence classes. A stronger class never inherits from a
 - Public-context scan: zero employer, application-package, or retired-brand references.
 - Fresh-clone proof from pushed branch commit `2c3c822a0c483837b922dd0337394c43a3afcc1a`: `npm.cmd ci` installed the lockfile with zero vulnerabilities; 40/40 tests passed; the production build emitted nine routes; and the primary desktop/mobile browser journey passed 6/6. The first install attempt ran from the wrong working directory and exited 1 before installation; it is recorded as harness error and not counted as product proof.
 - First fresh-clone attempt at reviewed remediation commit `4cd73ab3897149c0bfcdea90f06d606312788a3c`: locked install completed with zero vulnerabilities, then the suite failed 93/94 because the RLS policy extractor required LF while Git produced a CRLF checkout. This is valid portability failing-before evidence; the SHA was not accepted as final.
-- Portability remediation: the policy extractor accepts `LF` and `CRLF`, and its test executes both checkout shapes explicitly. A new exact-commit fresh clone and distinct review are required.
+- Portability remediation at `a4add53046472f9c234cd30bfbbcb5689ccec87a`: the policy extractor accepts `LF` and `CRLF`, and its test executes both checkout shapes explicitly. A new public clone installed 444 packages with zero vulnerabilities, passed 94/94 tests, typecheck, lint, the eleven-route build, and 8/8 desktop/mobile journeys. Its disabled CV-R4 control failed 1/2 with exit 1; both restored runs passed 2/2 with exits 0 and 0.
 
 ## Distinct review and remediation
 
@@ -46,7 +46,8 @@ This manifest separates evidence classes. A stronger class never inherits from a
 - Third remediation: runtime guards now cover fetch, WebSocket, EventSource, and XMLHttpRequest; static mutations reject `createRequire` and executable transport forms; E2E injects contract/replay failures and proves retry; public authority copy stays `UNKNOWN` without authenticated receipts.
 - Fourth distinct reviewer verdict on `19cce15164905d490b5ae7637b5ea3b75363f64a`: `REVISE`. Runtime guards worked only for transports resolved during evaluation; pre-captured and computed-loader forms executed, eight static aliases escaped lint, and the recovery E2E did not start from or compare accepted evidence.
 - Fourth remediation: the canonical registry is private and frozen, replacements never execute, all eight named aliases are lint mutations, and recovery begins with accepted evidence then proves exact digest preservation across malformed responses.
-- A new distinct review is required on the exact fourth-remediation commit before push; the builder does not self-review.
+- Distinct acceptance reviewer verdict on `4cd73ab3897149c0bfcdea90f06d606312788a3c`: `APPROVE`, no in-scope P0/P1 findings and no edits.
+- Distinct portability reviewer verdict on `a4add53046472f9c234cd30bfbbcb5689ccec87a`: `APPROVE`; the LF/CRLF delta passed its direct old/new probe, 94/94 tests, build, and 8/8 E2E with no edits.
 
 ## GitHub truth
 
@@ -54,9 +55,10 @@ This manifest separates evidence classes. A stronger class never inherits from a
 - Visibility observed before clone: `PUBLIC`.
 - Branch: `dev/activation-proof-initial-build`.
 - Implementation commit: `2c3c822a0c483837b922dd0337394c43a3afcc1a`.
+- Reviewed product commit: `a4add53046472f9c234cd30bfbbcb5689ccec87a`.
 - Pull request: `https://github.com/shrishmanglik/activation-proof/pull/1`.
-- Authorized hosted CI run: `30700760250`, `success`, exact head `530b6d80a2ea266ee7ec2930b723d1196eb93932`. The `validate` job executed checkout, locked install, typecheck, lint, 40 tests, a nine-route production build, Chromium install, and 6/6 desktop/mobile journeys. This proves that historical PR head only.
-- Corrective hosted CI for the remediation head: not run at this point. Local remediation proof does not inherit the historical hosted result.
+- Historical hosted CI runs `30700572801` at `2c3c822a0c483837b922dd0337394c43a3afcc1a` and `30700760250` at `530b6d80a2ea266ee7ec2930b723d1196eb93932` both completed `success` with real checkout, locked install, typecheck, lint, 40 tests, nine-route build, Chromium install, and 6/6 desktop/mobile steps. Two full pre-merge runs occurred before the corrective-run budget hold; neither proves the reviewed product commit.
+- Hosted CI for the reviewed remediation commit: `NOT-RUN`; the `[skip ci]` corrective commits intentionally created no additional run. Local and fresh-clone proof do not inherit either historical hosted result.
 
 ## Provider truth
 

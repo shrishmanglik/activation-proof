@@ -12,7 +12,7 @@ This manifest separates evidence classes. A stronger class never inherits from a
 
 - Workspace: isolated task checkout on `dev/activation-proof-initial-build`.
 - Base: `main@10a4c8e58c7626f6ae17ca1ac867e913a737a4f8`.
-- Canonical authority root correction: original dispatch named absent `C:\MDS`; current `C:\AGI` canon explicitly superseded it. Corrected `GAP`, not a mirror substitution.
+- Canonical authority root correction: the original dispatch named an absent retired root; current local canon explicitly superseded it. Corrected `GAP`, not a mirror substitution.
 - Product-quality reference: Vedic Astro Studio local `main@fd397bddc18507728d4a2e33196b8d21b4621e85`, clean and aligned with GitHub at inspection. Its README status was stale, so only current registry, runtime-path, QA-gate, claim-ceiling, and release/recovery patterns were used.
 - `npm.cmd audit --audit-level=high`: exit 0, `found 0 vulnerabilities`. Next 16.2.12's vulnerable transitive PostCSS/Sharp versions were replaced by bounded lockfile overrides and revalidated.
 - `npm.cmd run typecheck`: exit 0.

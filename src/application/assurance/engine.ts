@@ -45,7 +45,9 @@ export function executeSyntheticCorpus(fixtures: SyntheticFixture[] = syntheticF
     const outbound = new DenyAllOutboundCapability();
     let evaluation: DetectorEvaluation;
     try {
-      evaluation = detector?.evaluate(fixture, { outbound }) ?? unavailableDetector(fixture);
+      evaluation = detector
+        ? outbound.runGuarded(() => detector.evaluate(fixture, { outbound }))
+        : unavailableDetector(fixture);
     } catch (caught) {
       evaluation = {
         ...unavailableDetector(fixture),

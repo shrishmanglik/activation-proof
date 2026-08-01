@@ -8,9 +8,11 @@ export type PersistenceAction =
   | "receipt:read"
   | "receipt:create";
 
+export type MembershipRole = "architect" | "reviewer" | "approver" | "operator";
+
 export interface AuthorizationSubject {
-  userId: string;
-  tenantIds: string[];
+  userId: string | null;
+  memberships: Array<{ tenantId: string; role: MembershipRole }>;
 }
 
 export interface AuthorizationRecord {
@@ -21,20 +23,22 @@ export interface AuthorizationRecord {
 }
 
 export function canAccessPersistence(subject: AuthorizationSubject, action: PersistenceAction, record: AuthorizationRecord): boolean {
-  const isMember = subject.tenantIds.includes(record.tenantId);
-  if (!isMember) return false;
+  if (!subject.userId) return false;
+  const membership = subject.memberships.find((entry) => entry.tenantId === record.tenantId);
+  if (!membership) return false;
   switch (action) {
     case "membership:read":
       return record.userId === subject.userId;
     case "contract:create":
     case "contract:update":
-      return record.ownerId === subject.userId;
+      return membership.role === "architect" && record.ownerId === subject.userId;
     case "run:create":
-      return record.createdBy === subject.userId;
+      return ["architect", "operator"].includes(membership.role) && record.createdBy === subject.userId;
+    case "receipt:create":
+      return membership.role === "operator";
     case "contract:read":
     case "run:read":
     case "receipt:read":
-    case "receipt:create":
       return true;
   }
 }

@@ -60,7 +60,7 @@ See [architecture](docs/ARCHITECTURE.md), [security/privacy](docs/SECURITY.md), 
 
 - **Deterministic code:** owns every implemented decision. Controls are versioned and fail closed.
 - **AI:** absent from the implemented runtime. A proposed assistive layer may draft or explain, but cannot decide identity, consent, mapping, approval, release, or evidence.
-- **Human:** reviews exact receipts and owns any future sandbox or production authority. Two distinct approvers, exact digest equality, and rollback proof are required even for bounded sandbox authorization.
+- **Human:** reviews exact receipts and owns any future sandbox or production authority. The implemented release-readiness control returns `UNKNOWN` when only role slots and a rollback procedure exist; it never converts those declarations into approval evidence.
 
 ## Evidence receipts
 
@@ -75,7 +75,7 @@ Every control emits `DecisionReceipt.v1` with:
 - `dataClass: SYNTHETIC`;
 - stable SHA-256 evidence digest.
 
-Detector health and business result are different fields. A broken detector can never turn an empty result into a clean claim. Receipt sealing is refused if any detector attempts to use the injected outbound capability.
+Detector health and business result are different fields. A broken detector can never turn an empty result into a clean claim. Receipt sealing is refused if a detector uses the injected outbound capability or the runtime-guarded global fetch surface; detector lint also rejects direct and dynamic transport bypasses.
 
 ## Local setup
 
@@ -136,6 +136,7 @@ The hypothesis is that a bounded assurance engagement for one high-value cross-p
 | Input/trace/contract-bound evidence and second-run digest | Implemented locally |
 | Exportable handoff bundle and exact deterministic replay | Implemented locally |
 | Deny-all outbound capability with attempted-call mutation test | Implemented locally |
+| Human release-authority boundary (`UNKNOWN` without real receipts) | Implemented locally |
 | Critical consent-detector mutation control | Implemented locally |
 | Typed contract, assurance, and replay APIs | Implemented locally |
 | Supabase schema, tenant-consistent references, and table-by-table RLS | Source proposal; not applied |

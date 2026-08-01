@@ -15,6 +15,12 @@ describe("recovery and indeterminate-state controls", () => {
     expect(result?.evaluation.findings.map((finding) => finding.code)).toContain("CV_R10_ROLLBACK_MISSING");
   });
 
+  it("keeps release authority unknown when only role slots and a rollback procedure exist", () => {
+    const result = results.get("CV-R10-GOOD");
+    expect(result?.evaluation.decision).toBe("UNKNOWN");
+    expect(result?.evaluation.findings.map((finding) => finding.code)).toContain("CV_R10_HUMAN_AUTHORITY_REQUIRED");
+  });
+
   it("keeps the clean operation bounded to one simulator acknowledgement", () => {
     const result = results.get("CV-R7-GOOD");
     expect(result?.evaluation.decision).toBe("PASS");

@@ -24,7 +24,7 @@ export interface SyntheticFixture<TData = unknown> {
   detectorId: `DET-${RequirementId}`;
   controlKind: ControlKind;
   scenario: string;
-  expectedDecision: Exclude<Decision, "UNKNOWN">;
+  expectedDecision: Decision;
   data: TData;
   classification: "SYNTHETIC";
 }

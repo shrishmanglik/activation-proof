@@ -65,21 +65,21 @@ create policy tenant_memberships_select_self on public.tenant_memberships
 create policy journey_contracts_tenant_read on public.journey_contracts
   for select using (tenant_id in (select tenant_id from public.tenant_memberships where user_id = auth.uid()));
 create policy journey_contracts_owner_write on public.journey_contracts
-  for insert with check (owner_id = auth.uid() and tenant_id in (select tenant_id from public.tenant_memberships where user_id = auth.uid()));
+  for insert with check (owner_id = auth.uid() and tenant_id in (select tenant_id from public.tenant_memberships where user_id = auth.uid() and role = 'architect'));
 create policy journey_contracts_owner_update on public.journey_contracts
   for update
-  using (owner_id = auth.uid() and tenant_id in (select tenant_id from public.tenant_memberships where user_id = auth.uid()))
-  with check (owner_id = auth.uid() and tenant_id in (select tenant_id from public.tenant_memberships where user_id = auth.uid()));
+  using (owner_id = auth.uid() and tenant_id in (select tenant_id from public.tenant_memberships where user_id = auth.uid() and role = 'architect'))
+  with check (owner_id = auth.uid() and tenant_id in (select tenant_id from public.tenant_memberships where user_id = auth.uid() and role = 'architect'));
 
 create policy assurance_runs_tenant_read on public.assurance_runs
   for select using (tenant_id in (select tenant_id from public.tenant_memberships where user_id = auth.uid()));
 create policy assurance_runs_creator_write on public.assurance_runs
-  for insert with check (created_by = auth.uid() and tenant_id in (select tenant_id from public.tenant_memberships where user_id = auth.uid()));
+  for insert with check (created_by = auth.uid() and tenant_id in (select tenant_id from public.tenant_memberships where user_id = auth.uid() and role in ('architect', 'operator')));
 
 create policy decision_receipts_tenant_read on public.decision_receipts
   for select using (tenant_id in (select tenant_id from public.tenant_memberships where user_id = auth.uid()));
 create policy decision_receipts_creator_write on public.decision_receipts
-  for insert with check (tenant_id in (select tenant_id from public.tenant_memberships where user_id = auth.uid()));
+  for insert with check (tenant_id in (select tenant_id from public.tenant_memberships where user_id = auth.uid() and role = 'operator'));
 
 revoke all on public.tenant_memberships, public.journey_contracts, public.assurance_runs, public.decision_receipts from anon;
 grant select, insert, update on public.journey_contracts to authenticated;

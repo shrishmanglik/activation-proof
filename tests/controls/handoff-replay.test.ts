@@ -15,6 +15,17 @@ describe("non-builder handoff and replay", () => {
     expect(bundle.recoveryProcedure).toBe(contract.rollbackProcedure);
   });
 
+  it("does not synthesize human approval or recovery-drill evidence from contract role slots", () => {
+    const releaseControl = compileSyntheticFixtures(contract).find((fixture) => fixture.fixtureId === "CV-R10-GOOD")!;
+    const data = releaseControl.data as Record<string, unknown>;
+    const releaseResult = run.results.find((result) => result.fixture.fixtureId === "CV-R10-GOOD")!;
+    expect(data.approverRoleSlots).toEqual(contract.approverRoles);
+    expect(data.humanApprovalReceipts).toEqual([]);
+    expect(data).not.toHaveProperty("approverIds");
+    expect(data).not.toHaveProperty("rollbackDigest");
+    expect(releaseResult.evaluation).toMatchObject({ decision: "UNKNOWN", findings: [{ code: "CV_R10_HUMAN_AUTHORITY_REQUIRED" }] });
+  });
+
   it("replays an untampered bundle to the exact run digest", () => {
     expect(replayHandoffBundle(bundle)).toMatchObject({ decision: "MATCH", originalRunDigest: run.evidenceDigest, replayRunDigest: run.evidenceDigest });
   });

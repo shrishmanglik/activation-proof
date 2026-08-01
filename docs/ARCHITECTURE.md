@@ -42,21 +42,21 @@ The UI cannot instantiate a provider adapter. A user can author only a bounded, 
 
 | Authority | Implemented responsibility | Prohibited responsibility |
 | --- | --- | --- |
-| Deterministic code | schema, mapping, identity, consent, state, parity, idempotency, lineage, detector canary, release prerequisites, attribution, redaction | widening its own authority or treating provider uncertainty as success |
+| Deterministic code | schema, mapping, identity, consent, state, parity, idempotency, lineage, detector canary, release-readiness prerequisites, attribution, redaction | widening its own authority or treating provider uncertainty as success |
 | AI | none in the implemented runtime | identity/consent decisions, approvals, production actions, evidence mutation |
 | Human | review exact receipts; separately authorize a bounded future release | one person satisfying both approvals; authority inferred from a technical pass |
 
 ## Persistence proposal
 
-`supabase/migrations/202608010001_activation_proof.sql` describes four tables: memberships, journey contracts, assurance runs, and decision receipts. RLS is enabled on every table, anonymous grants are revoked, and tenant access is mediated by the authenticated membership relation. Composite foreign keys make it impossible for a child row to reference a parent in another tenant. A pure authorization-matrix test exercises owner, operator, reviewer, outsider, anonymous, and wrong-tenant decisions. This is source-level architecture only. No database has been created or modified.
+`supabase/migrations/202608010001_activation_proof.sql` describes four tables: memberships, journey contracts, assurance runs, and decision receipts. RLS is enabled on every table, anonymous grants are revoked, and tenant access is mediated by authenticated membership and explicit `architect`, `reviewer`, `approver`, and `operator` roles. Composite foreign keys make it impossible for a child row to reference a parent in another tenant. A pure authorization-matrix test exercises each role, ownership, outsider, anonymous, and wrong-tenant decisions. This is source-level architecture only. No database has been created or modified.
 
 ## Failure, retry, and rollback
 
 - Malformed or undeclared API input fails closed with typed errors.
 - A detector absence yields `UNKNOWN` / `UNHEALTHY`, never a clean pass.
-- Any outbound capability attempt increments a measured counter, fails the run, and prevents receipt sealing before a network call exists.
+- Any outbound capability attempt increments a measured counter, fails the run, and prevents receipt sealing before a network call exists. During the synchronous detector contract, the engine also guards `globalThis.fetch`; detector lint rejects member/computed fetch, dynamic import, builtin-module, eval, and network-import bypasses.
 - Timeout after possible provider commit is represented by the CV-R7 indeterminate-state control; blind retry is rejected.
-- Release prerequisites require exact digest equality, two distinct approvers, and rollback proof.
+- The release-readiness control verifies deterministic declarations but returns `UNKNOWN` until separately authenticated human approval and recovery-drill receipts exist outside this local product.
 - The UI supports cancellation and retry while retaining the last completed evidence; contract changes invalidate the prior run and bundle.
 - Exported handoffs include deterministic replay and recovery steps; replay rejects a tampered contract or bundle before comparison.
 - The proposed SQL rollback is review-only and explicitly destructive; it is never automatically executed.

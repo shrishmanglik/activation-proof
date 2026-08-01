@@ -29,4 +29,10 @@ describe("proposed Supabase persistence boundary", () => {
     const updatePolicy = schema.match(/create policy journey_contracts_owner_update[\s\S]+?;\n/)?.[0] ?? "";
     expect(updatePolicy.match(/tenant_memberships/g)).toHaveLength(2);
   });
+
+  it("uses membership roles for every persistence write boundary", () => {
+    expect(schema).toContain("role = 'architect'");
+    expect(schema).toContain("role in ('architect', 'operator')");
+    expect(schema).toContain("role = 'operator'");
+  });
 });

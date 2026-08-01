@@ -35,7 +35,9 @@ npm.cmd run control:consent
 
 Expected: the first command exits non-zero because the opted-out bad fixture escapes; the restored command exits zero.
 
-The security suite also injects a detector that attempts to use the outbound capability. Expected: the attempt counter is one, the underlying call counter remains zero, the run fails, and no receipt is sealed.
+The security suite injects detectors that attempt both the outbound capability and `globalThis.fetch`. Expected: each attempt counter is one, the underlying transport counter remains zero, the run fails, and no receipt is sealed. A separate lint mutation rejects member/computed fetch and dynamic transport-loading forms.
+
+The clean CV-R10 release-readiness control is expected to return `UNKNOWN`, not `PASS`: role slots and a rollback procedure are declarations, not authenticated human approval or recovery-drill receipts.
 
 ## Recovery
 

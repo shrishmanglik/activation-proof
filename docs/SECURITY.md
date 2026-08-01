@@ -4,12 +4,12 @@
 
 - Synthetic and tokenized fixtures only.
 - A deny-all outbound capability is injected into every detector; attempts are counted before refusal, fail the run, and prevent receipt sealing.
-- Detector-specific lint rules reject direct `fetch` use and Node/network client imports.
+- The synchronous detector execution boundary also guards `globalThis.fetch`. Detector-specific lint rules reject bare/member/computed fetch, dynamic import, runtime builtin loading, eval-generated transports, and network client imports.
 - No credential entry UI, production adapter, webhook, or customer contact path.
 - Typed API allowlist for the one repository-owned fixture corpus.
 - Restricted handoff-field detector covering raw email and access-token field classes.
 - Optional Supabase schema enables RLS on every application table, revokes anonymous access, and uses tenant-consistent composite foreign keys.
-- Local tests inspect the table-to-RLS mapping and exercise an executable tenant/role authorization matrix.
+- Local tests inspect the table-to-RLS mapping and exercise an executable tenant/role authorization matrix covering architect, reviewer, approver, operator, outsider, anonymous, ownership, and wrong-tenant cases.
 
 ## Deliberately absent
 

@@ -93,13 +93,13 @@ export const syntheticFixtures: SyntheticFixture[] = [
   },
   {
     fixtureId: "CV-R10-BAD", requirementId: "CV-R10", detectorId: "DET-CV-R10", controlKind: "NEGATIVE", expectedDecision: "REJECT", classification: "SYNTHETIC",
-    scenario: "Tests pass but the contract digest drifted and rollback proof is absent.",
-    data: { reviewedDigest: "sha256:reviewed", targetDigest: "sha256:changed", rollbackDigest: null, approverIds: ["reviewer_a"] },
+    scenario: "Tests pass but the contract digest drifted, rollback procedure is absent, and the same role occupies both review slots.",
+    data: { reviewedDigest: "sha256:reviewed", targetDigest: "sha256:changed", rollbackProcedure: null, approverRoleSlots: ["architecture_reviewer", "architecture_reviewer"], humanApprovalReceipts: [] },
   },
   {
-    fixtureId: "CV-R10-GOOD", requirementId: "CV-R10", detectorId: "DET-CV-R10", controlKind: "POSITIVE", expectedDecision: "PASS", classification: "SYNTHETIC",
-    scenario: "Exact reviewed digests, two approvers, and rollback proof are present for sandbox authority.",
-    data: { reviewedDigest: "sha256:reviewed", targetDigest: "sha256:reviewed", rollbackDigest: "sha256:rollback", approverIds: ["reviewer_a", "reviewer_b"] },
+    fixtureId: "CV-R10-GOOD", requirementId: "CV-R10", detectorId: "DET-CV-R10", controlKind: "POSITIVE", expectedDecision: "UNKNOWN", classification: "SYNTHETIC",
+    scenario: "The deterministic release prerequisites are declared, but no human approval or recovery-drill receipt exists.",
+    data: { reviewedDigest: "sha256:reviewed", targetDigest: "sha256:reviewed", rollbackProcedure: "Restore the last accepted digest and replay the clean corpus.", approverRoleSlots: ["architecture_reviewer", "privacy_reviewer"], humanApprovalReceipts: [] },
   },
   {
     fixtureId: "CV-R11-BAD", requirementId: "CV-R11", detectorId: "DET-CV-R11", controlKind: "NEGATIVE", expectedDecision: "REJECT", classification: "SYNTHETIC",

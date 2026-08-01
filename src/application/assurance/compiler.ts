@@ -20,7 +20,13 @@ export function compileSyntheticFixtures(contract: JourneyContract): SyntheticFi
       compiled.data = { events: contract.stateSequence.map((type, index) => ({ id: `evt_${index + 1}`, type })) };
     }
     if (compiled.fixtureId === "CV-R10-GOOD") {
-      compiled.data = { reviewedDigest: contract.contractDigest, targetDigest: contract.contractDigest, rollbackDigest: `sha256:rollback:${contract.contractDigest.slice(-16)}`, approverIds: contract.approverRoles };
+      compiled.data = {
+        reviewedDigest: contract.contractDigest,
+        targetDigest: contract.contractDigest,
+        rollbackProcedure: contract.rollbackProcedure,
+        approverRoleSlots: contract.approverRoles,
+        humanApprovalReceipts: [],
+      };
     }
     return compiled;
   });

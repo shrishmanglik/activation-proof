@@ -185,7 +185,7 @@ export function ActivationProofWorkspace() {
 
           <div className="grid gap-5 lg:grid-cols-2">
             <ResultGroup title="Bad controls" description="Seeded defects must be rejected." results={badResults} />
-            <ResultGroup title="Clean controls" description="Only the approved synthetic contract may pass." results={goodResults} />
+            <ResultGroup title="Clean controls" description="Clean deterministic inputs pass; release authority remains UNKNOWN until real human evidence exists." results={goodResults} />
           </div>
           {handoffBundle && <Card>
             <CardHeader><div className="flex flex-wrap items-center justify-between gap-3"><Badge tone="evidence">STEP 3 · REDACTED HANDOFF</Badge><Badge tone="neutral">LOCAL REPLAY ONLY</Badge></div><CardTitle className="mt-4">Export and replay without the builder</CardTitle><CardDescription>The bundle embeds the exact contract, all sealed receipts, recovery, and deterministic replay steps. A separate operator can verify it through the documented replay endpoint.</CardDescription></CardHeader>

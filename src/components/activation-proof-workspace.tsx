@@ -17,6 +17,7 @@ export function ActivationProofWorkspace() {
   const [contract, setContract] = useState<JourneyContract | null>(null);
   const [handoffBundle, setHandoffBundle] = useState<HandoffBundle | null>(null);
   const [replayReceipt, setReplayReceipt] = useState<ReplayReceipt | null>(null);
+  const [replayError, setReplayError] = useState<string | null>(null);
   const [contractError, setContractError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const controllerRef = useRef<AbortController | null>(null);
@@ -41,16 +42,19 @@ export function ActivationProofWorkspace() {
       rollbackProcedure: String(form.get("rollbackProcedure")),
       approverRoles: ["architecture_reviewer", "privacy_reviewer"],
     };
-    const response = await fetch("/api/v1/journey-contracts", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) });
-    if (!response.ok) {
-      setContractError("The contract failed local validation. Use slug-shaped system and role identifiers and a concrete rollback procedure.");
-      return;
+    try {
+      const response = await fetch("/api/v1/journey-contracts", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) });
+      if (!response.ok) throw new Error(`Contract request failed with HTTP ${response.status}`);
+      const body = await response.json() as { contract?: JourneyContract };
+      if (!body.contract) throw new Error("Contract response omitted the sealed contract");
+      setContract(body.contract);
+      setRun(null);
+      setHandoffBundle(null);
+      setReplayReceipt(null);
+      setReplayError(null);
+    } catch {
+      setContractError("The contract could not be sealed. Check the bounded fields, then retry; any prior sealed contract remains unchanged.");
     }
-    const body = await response.json() as { contract: JourneyContract };
-    setContract(body.contract);
-    setRun(null);
-    setHandoffBundle(null);
-    setReplayReceipt(null);
   }
 
   async function startRun() {
@@ -72,6 +76,7 @@ export function ActivationProofWorkspace() {
       setRun(body.run);
       setHandoffBundle(body.handoffBundle);
       setReplayReceipt(null);
+      setReplayError(null);
       setState("SUCCESS");
     } catch (caught) {
       if (controller.signal.aborted) {
@@ -100,9 +105,17 @@ export function ActivationProofWorkspace() {
 
   async function replayHandoff() {
     if (!handoffBundle) return;
-    const response = await fetch("/api/v1/handoff-bundles/replay", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(handoffBundle) });
-    const body = await response.json() as { receipt: ReplayReceipt };
-    setReplayReceipt(body.receipt);
+    setReplayError(null);
+    try {
+      const response = await fetch("/api/v1/handoff-bundles/replay", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(handoffBundle) });
+      if (!response.ok) throw new Error(`Replay request failed with HTTP ${response.status}`);
+      const body = await response.json() as { receipt?: ReplayReceipt };
+      if (!body.receipt) throw new Error("Replay response omitted its receipt");
+      setReplayReceipt(body.receipt);
+    } catch {
+      setReplayReceipt(null);
+      setReplayError("Replay failed without changing the sealed bundle. Retain the original evidence and retry the deterministic replay.");
+    }
   }
 
   const badResults = run?.results.filter((result) => result.fixture.controlKind === "NEGATIVE") ?? [];
@@ -189,7 +202,7 @@ export function ActivationProofWorkspace() {
           </div>
           {handoffBundle && <Card>
             <CardHeader><div className="flex flex-wrap items-center justify-between gap-3"><Badge tone="evidence">STEP 3 · REDACTED HANDOFF</Badge><Badge tone="neutral">LOCAL REPLAY ONLY</Badge></div><CardTitle className="mt-4">Export and replay without the builder</CardTitle><CardDescription>The bundle embeds the exact contract, all sealed receipts, recovery, and deterministic replay steps. A separate operator can verify it through the documented replay endpoint.</CardDescription></CardHeader>
-            <CardContent><div className="flex flex-wrap gap-3"><Button variant="outline" onClick={downloadHandoff}>Download JSON handoff</Button><Button onClick={replayHandoff}>Replay sealed handoff</Button></div>{replayReceipt && <p className="mt-4 text-sm" role="status"><Badge tone={replayReceipt.decision === "MATCH" ? "pass" : "fail"}>{replayReceipt.decision}</Badge> <span className="ml-2 text-[var(--text-muted)]">{replayReceipt.reason} · {replayReceipt.replayRunDigest?.slice(0, 21) ?? "no replay digest"}…</span></p>}</CardContent>
+            <CardContent><div className="flex flex-wrap gap-3"><Button variant="outline" onClick={downloadHandoff}>Download JSON handoff</Button><Button onClick={replayHandoff}>{replayError ? "Retry handoff replay" : "Replay sealed handoff"}</Button></div>{replayReceipt && <p className="mt-4 text-sm" role="status"><Badge tone={replayReceipt.decision === "MATCH" ? "pass" : "fail"}>{replayReceipt.decision}</Badge> <span className="ml-2 text-[var(--text-muted)]">{replayReceipt.reason} · {replayReceipt.replayRunDigest?.slice(0, 21) ?? "no replay digest"}…</span></p>}{replayError && <p className="mt-4 text-sm text-[var(--fail)]" role="alert">{replayError}</p>}</CardContent>
           </Card>}
         </section>
       )}

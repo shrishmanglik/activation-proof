@@ -20,10 +20,11 @@ This manifest separates evidence classes. A stronger class never inherits from a
 - Initial branch proof: `npm.cmd test` exited 0 with 5 files and 40 tests passed.
 - First remediation proof at `bd2b761de0d0b6fd46f728211d1244ddf9e50dd3`: `npm.cmd test` exited 0 with 8 files and 63 tests passed. A second distinct review rejected that commit because global member fetch remained a bypass, release authority was synthesized from role slots, mutation coverage was indirect, and the authorization matrix was not actually role-aware.
 - Second remediation proof: `npm.cmd test` exited 0 with 9 files and 79 tests passed. It adds a runtime global-fetch guard, static bypass mutations, explicit `UNKNOWN` human authority, proof that the compiler manufactures no approval/recovery receipts, independent data/scenario/trace/contract digest mutations, and role-aware SQL plus executable authorization decisions.
+- Third remediation proof: `npm.cmd test` exited 0 with 9 files and 82 tests passed; the focused security suite passed 41/41. Direct runtime mutations prove fetch and WebSocket attempts are counted and blocked before their underlying transports, while static mutations reject six bypass forms including `createRequire`.
 - Disabled critical detector: `ACTIVATIONPROOF_DISABLE_DETECTOR=CV-R4 npm.cmd run control:consent` equivalent PowerShell run exited 1; one of two tests failed because the opted-out fixture incorrectly returned `PASS` instead of `REJECT`.
 - Restored critical detector: `npm.cmd run control:consent` ran twice; each run exited 0 with 2/2 tests passed.
 - `npm.cmd run build`: exit 0; Next.js 16.2.12 compiled successfully and emitted eleven routes, including journey-contract, assurance-run, and handoff-replay APIs plus six public product surfaces.
-- `npm.cmd run e2e`: exit 0; 6/6 desktop/mobile journeys passed, including contract sealing, 24-control execution, handoff replay, keyboard activation, 390px no-overflow, and serious/critical Axe checks.
+- `npm.cmd run e2e`: exit 0; 8/8 desktop/mobile journeys passed, including contract sealing, 24-control execution, handoff replay, injected contract/replay failure and retry, keyboard activation, 390px no-overflow, and serious/critical Axe checks.
 - `npm.cmd run e2e:update-screenshot`: exit 0; 2/2 screenshot journeys passed. Desktop overview and 390px completed-workflow images were inspected locally.
 - Secret scan: known-positive pattern matched before the repository scan returned zero matches.
 - Public-context scan: zero employer, application-package, or retired-brand references.
@@ -38,7 +39,9 @@ This manifest separates evidence classes. A stronger class never inherits from a
 - Finding 4: child persistence references were not provably tenant-consistent. Remediation: composite tenant/parent foreign keys plus an executable authorization matrix.
 - Second distinct reviewer verdict on `bd2b761de0d0b6fd46f728211d1244ddf9e50dd3`: `REVISE`. The reviewer independently passed 63 tests, typecheck, lint, an eleven-route build, 6/6 E2E, audit, and the critical detector mutation, but proved the adjacent-check gaps above.
 - Second remediation: synchronous runtime interception and lint mutations block direct/global/dynamic outbound surfaces; CV-R10 returns `UNKNOWN` without real human receipts; direct mutations cover scenario, full trace, and contract binding; SQL and pure authorization tests enforce named membership roles.
-- A new distinct review is required on the exact second-remediation commit before push; the builder does not self-review.
+- Third distinct reviewer verdict on `77ffd43ca4fc3168248384ffcf9c36988e8a5ed0`: `REVISE`. The four earlier defect classes were closed, but WebSocket and `createRequire` probes bypassed the claimed deny-all boundary, contract/replay UI failures lacked recovery states, and one landing sentence implied human evidence that did not exist.
+- Third remediation: runtime guards now cover fetch, WebSocket, EventSource, and XMLHttpRequest; static mutations reject `createRequire` and executable transport forms; E2E injects contract/replay failures and proves retry; public authority copy stays `UNKNOWN` without authenticated receipts.
+- A new distinct review is required on the exact third-remediation commit before push; the builder does not self-review.
 
 ## GitHub truth
 

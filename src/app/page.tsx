@@ -48,7 +48,7 @@ export default function HomePage() {
         <div className="mt-10 grid gap-5 md:grid-cols-3">
           <Card><CardHeader><Braces aria-hidden="true" className="text-[var(--pass)]" /><CardTitle className="mt-4">Code decides</CardTitle><CardDescription>Schema compatibility, mapping units, identity collision, consent eligibility, event order, parity, idempotency, lineage, canary health, attribution, and redaction.</CardDescription></CardHeader></Card>
           <Card><CardHeader><BotOff aria-hidden="true" className="text-[var(--evidence)]" /><CardTitle className="mt-4">AI does not decide</CardTitle><CardDescription>The implemented vertical makes no AI call. A future assistive layer may draft or explain, but never approve, activate, or rewrite evidence.</CardDescription></CardHeader></Card>
-          <Card><CardHeader><FileCheck2 aria-hidden="true" className="text-[var(--unknown)]" /><CardTitle className="mt-4">Humans authorize</CardTitle><CardDescription>Two distinct approvers bind the exact digest and rollback proof. The repository contains no production connector, credential path, or customer contact capability.</CardDescription></CardHeader></Card>
+          <Card><CardHeader><FileCheck2 aria-hidden="true" className="text-[var(--unknown)]" /><CardTitle className="mt-4">Humans authorize</CardTitle><CardDescription>The product records distinct review role slots, then keeps authority UNKNOWN until separately authenticated approval and recovery-drill receipts exist. No such receipts are claimed here.</CardDescription></CardHeader></Card>
         </div>
       </section>
 

@@ -8,12 +8,20 @@ export default defineConfig([
   {
     files: ["src/detectors/**/*.ts"],
     rules: {
-      "no-restricted-globals": ["error", { name: "fetch", message: "Detectors must use the injected outbound capability seam." }],
-      "no-restricted-imports": ["error", { paths: ["http", "https", "net", "dgram", "tls", "node:http", "node:https", "node:net", "node:dgram", "node:tls", "undici", "axios"] }],
+      "no-restricted-globals": ["error",
+        { name: "fetch", message: "Detectors must use the injected outbound capability seam." },
+        { name: "WebSocket", message: "Detectors cannot open a WebSocket transport." },
+        { name: "EventSource", message: "Detectors cannot open an EventSource transport." },
+        { name: "XMLHttpRequest", message: "Detectors cannot open an XMLHttpRequest transport." },
+      ],
+      "no-restricted-imports": ["error", { paths: ["http", "https", "net", "dgram", "tls", "module", "node:http", "node:https", "node:net", "node:dgram", "node:tls", "node:module", "undici", "axios"] }],
       "no-restricted-syntax": [
         "error",
         { selector: "MemberExpression[property.name='fetch']", message: "Detectors cannot bypass the guarded outbound boundary through a member fetch call." },
         { selector: "MemberExpression[computed=true][property.value='fetch']", message: "Detectors cannot bypass the guarded outbound boundary through a computed fetch call." },
+        { selector: "MemberExpression[property.name='WebSocket']", message: "Detectors cannot bypass the guarded outbound boundary through a WebSocket member." },
+        { selector: "MemberExpression[property.name='EventSource']", message: "Detectors cannot bypass the guarded outbound boundary through an EventSource member." },
+        { selector: "MemberExpression[property.name='XMLHttpRequest']", message: "Detectors cannot bypass the guarded outbound boundary through an XMLHttpRequest member." },
         { selector: "MemberExpression[property.name='getBuiltinModule']", message: "Detectors cannot load network modules dynamically." },
         { selector: "ImportExpression", message: "Detectors cannot dynamically import an outbound transport." },
         { selector: "CallExpression[callee.name='eval']", message: "Detectors cannot synthesize an outbound transport." },

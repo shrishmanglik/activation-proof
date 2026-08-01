@@ -4,7 +4,7 @@
 
 - Synthetic and tokenized fixtures only.
 - A deny-all outbound capability is injected into every detector; attempts are counted before refusal, fail the run, and prevent receipt sealing.
-- The synchronous detector execution boundary also guards `globalThis.fetch`. Detector-specific lint rules reject bare/member/computed fetch, dynamic import, runtime builtin loading, eval-generated transports, and network client imports.
+- The synchronous detector execution boundary also guards global fetch, WebSocket, EventSource, and XMLHttpRequest surfaces. Detector-specific lint rules reject bare/member/computed transports, dynamic import, `createRequire`/runtime builtin loading, eval-generated transports, and network client imports.
 - No credential entry UI, production adapter, webhook, or customer contact path.
 - Typed API allowlist for the one repository-owned fixture corpus.
 - Restricted handoff-field detector covering raw email and access-token field classes.

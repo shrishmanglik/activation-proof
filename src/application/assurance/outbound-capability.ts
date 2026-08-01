@@ -17,14 +17,22 @@ export class DenyAllOutboundCapability implements OutboundCapability {
   }
 
   runGuarded<T>(operation: () => T): T {
-    const descriptor = Object.getOwnPropertyDescriptor(globalThis, "fetch");
-    const guardedFetch = (() => this.deny("globalThis.fetch")) as typeof fetch;
-    Object.defineProperty(globalThis, "fetch", { configurable: true, writable: true, value: guardedFetch });
+    const guardedNames = ["fetch", "WebSocket", "EventSource", "XMLHttpRequest"] as const;
+    const descriptors = guardedNames.map((name) => [name, Object.getOwnPropertyDescriptor(globalThis, name)] as const);
+    const deny = this.deny.bind(this);
+    for (const name of guardedNames) {
+      function guardedTransport() {
+        return deny(`globalThis.${name}`);
+      }
+      Object.defineProperty(globalThis, name, { configurable: true, writable: true, value: guardedTransport });
+    }
     try {
       return operation();
     } finally {
-      if (descriptor) Object.defineProperty(globalThis, "fetch", descriptor);
-      else delete (globalThis as { fetch?: typeof fetch }).fetch;
+      for (const [name, descriptor] of descriptors) {
+        if (descriptor) Object.defineProperty(globalThis, name, descriptor);
+        else delete (globalThis as unknown as Record<string, unknown>)[name];
+      }
     }
   }
 

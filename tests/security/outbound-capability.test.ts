@@ -56,4 +56,35 @@ describe("enforced outbound capability boundary", () => {
       globalThis.fetch = originalFetch;
     }
   });
+
+  it("intercepts a globalThis.WebSocket bypass before the underlying transport can run", () => {
+    const originalWebSocket = globalThis.WebSocket;
+    let underlyingCalls = 0;
+    globalThis.WebSocket = (function () {
+      underlyingCalls += 1;
+    }) as unknown as typeof WebSocket;
+    try {
+      const bypassDetector: Detector = {
+        requirementId: "CV-R4",
+        detectorId: "DET-CV-R4",
+        version: "mutation-global-websocket",
+        evaluate() {
+          new globalThis.WebSocket("wss://invalid.example");
+          throw new Error("UNREACHABLE");
+        },
+      };
+      const mutatedRegistry = new Map(detectorRegistry);
+      mutatedRegistry.set("CV-R4", bypassDetector);
+      const fixture = syntheticFixtures.find((item) => item.fixtureId === "CV-R4-BAD")!;
+      const run = executeSyntheticCorpus([fixture], { detectors: mutatedRegistry });
+      expect(underlyingCalls).toBe(0);
+      expect(run.terminalState).toBe("FAILED");
+      expect(run.results[0].outboundAttemptCount).toBe(1);
+      expect(run.results[0].evaluation.externalCallCount).toBe(0);
+      expect(run.results[0].receipt).toBeNull();
+      expect(run.results[0].evaluation.findings[0].message).toContain("OUTBOUND_CAPABILITY_DENIED:globalThis.WebSocket");
+    } finally {
+      globalThis.WebSocket = originalWebSocket;
+    }
+  });
 });

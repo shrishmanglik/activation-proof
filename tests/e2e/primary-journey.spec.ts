@@ -26,3 +26,30 @@ test("keyboard users can reach and run the primary action", async ({ page }) => 
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { name: "All expected controls behaved correctly" })).toBeVisible();
 });
+
+test("recovers from contract sealing and replay failures without replacing evidence", async ({ page }) => {
+  let contractAttempts = 0;
+  await page.route("**/api/v1/journey-contracts", async (route) => {
+    contractAttempts += 1;
+    if (contractAttempts === 1) await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: { code: "SYNTHETIC_CONTRACT_FAILURE" } }) });
+    else await route.continue();
+  });
+  await page.goto("/workspace");
+  await page.getByRole("button", { name: "Seal synthetic contract" }).click();
+  await expect(page.getByText(/The contract could not be sealed/)).toBeVisible();
+  await page.getByRole("button", { name: "Seal synthetic contract" }).click();
+  await expect(page.getByText(/REVIEW_READY/)).toBeVisible();
+  await page.getByRole("button", { name: "Run 24 controls" }).click();
+  await expect(page.getByText("24/24 expectations met")).toBeVisible();
+
+  let replayAttempts = 0;
+  await page.route("**/api/v1/handoff-bundles/replay", async (route) => {
+    replayAttempts += 1;
+    if (replayAttempts === 1) await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: { code: "SYNTHETIC_REPLAY_FAILURE" } }) });
+    else await route.continue();
+  });
+  await page.getByRole("button", { name: "Replay sealed handoff" }).click();
+  await expect(page.getByText(/Retain the original evidence/)).toBeVisible();
+  await page.getByRole("button", { name: "Retry handoff replay" }).click();
+  await expect(page.getByText("DETERMINISTIC_REPLAY_MATCH")).toBeVisible();
+});

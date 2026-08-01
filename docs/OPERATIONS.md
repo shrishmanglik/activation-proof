@@ -35,7 +35,7 @@ npm.cmd run control:consent
 
 Expected: the first command exits non-zero because the opted-out bad fixture escapes; the restored command exits zero.
 
-The security suite injects detectors that attempt the outbound capability, `globalThis.fetch`, and `globalThis.WebSocket`. Expected: each attempt counter is one, the underlying transport counter remains zero, the run fails, and no receipt is sealed. Separate lint mutations reject member/computed transports, `createRequire`, and dynamic transport-loading forms.
+The security suite proves three layers: the capability and guarded global transports count/refuse attempts; the private canonical registry rejects replacement evaluators before pre-captured or computed-loader markers execute; and fourteen lint mutations reject direct, captured, computed, runtime-loader, eval/Function, and dynamic transport forms. No rejected replacement or outbound attempt can seal a receipt.
 
 The clean CV-R10 release-readiness control is expected to return `UNKNOWN`, not `PASS`: role slots and a rollback procedure are declarations, not authenticated human approval or recovery-drill receipts.
 
@@ -44,10 +44,10 @@ The clean CV-R10 release-readiness control is expected to return `UNKNOWN`, not 
 - UI request failure: no result is promoted; retry preserves the prior completed receipt.
 - Cancelled run: partial results are discarded.
 - Contract change: the prior run and handoff are invalidated; seal and execute the new contract.
-- Contract sealing failure: the prior sealed contract remains unchanged; correct the bounded input or retry the local request.
+- Contract sealing failure: the prior sealed contract and handoff bundle remain unchanged; the E2E recovery journey compares their exact displayed digests after a malformed response, then retries.
 - Detector unhealthy: keep promotion blocked and repair the named detector.
 - Handoff replay mismatch or digest failure: reject the bundle; return to the sealed contract and create a new run rather than editing evidence.
-- Handoff replay transport failure: retain the sealed bundle and retry; the UI does not replace evidence with a partial response.
+- Handoff replay transport/parse failure: retain the exact displayed bundle digest and download capability, then retry; the UI does not replace evidence with a partial response.
 - Digest drift or missing rollback: retain the last accepted contract; do not authorize sandbox action.
 - Indeterminate provider state in a future adapter: query by stable operation key; never blind retry.
 - Persistence rollback: review `supabase/rollback/202608010001_activation_proof.down.sql`, preserve evidence first, and require separate provider authority. It is not an automatic recovery command.

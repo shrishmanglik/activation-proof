@@ -1,6 +1,6 @@
 import type { AssuranceRun, ControlResult, Detector, DetectorEvaluation, RequirementId, SyntheticFixture } from "@/domain/assurance";
 import { syntheticFixtures } from "@/domain/fixtures";
-import { detectorRegistry } from "@/detectors";
+import { detectorRegistry, getCanonicalDetector } from "@/detectors";
 import { createReceipt, digest } from "@/evidence/receipt";
 import type { AssuranceService, RunAssuranceRequest } from "@/application/assurance/service";
 import { DenyAllOutboundCapability } from "@/application/assurance/outbound-capability";
@@ -32,6 +32,17 @@ function unavailableDetector(fixture: SyntheticFixture): DetectorEvaluation {
   };
 }
 
+function rejectedDetectorReplacement(fixture: SyntheticFixture): DetectorEvaluation {
+  return {
+    ...unavailableDetector(fixture),
+    findings: [{
+      code: "DETECTOR_REGISTRY_REPLACEMENT_REJECTED",
+      message: `${fixture.detectorId} is not the frozen repository-owned detector.`,
+      recovery: "Restore the canonical detector and rerun the controls.",
+    }],
+  };
+}
+
 export interface ExecutionOptions {
   contractDigest?: string;
   detectors?: ReadonlyMap<RequirementId, Detector>;
@@ -42,12 +53,16 @@ export function executeSyntheticCorpus(fixtures: SyntheticFixture[] = syntheticF
   const detectors = options.detectors ?? detectorRegistry;
   const results: ControlResult[] = fixtures.map((fixture) => {
     const detector = detectors.get(fixture.requirementId);
+    const canonicalDetector = getCanonicalDetector(fixture.requirementId);
+    const detectorIsCanonical = detector !== undefined && detector === canonicalDetector;
     const outbound = new DenyAllOutboundCapability();
     let evaluation: DetectorEvaluation;
     try {
-      evaluation = detector
+      evaluation = detectorIsCanonical
         ? outbound.runGuarded(() => detector.evaluate(fixture, { outbound }))
-        : unavailableDetector(fixture);
+        : detector === undefined
+          ? unavailableDetector(fixture)
+          : rejectedDetectorReplacement(fixture);
     } catch (caught) {
       evaluation = {
         ...unavailableDetector(fixture),
@@ -60,7 +75,7 @@ export function executeSyntheticCorpus(fixtures: SyntheticFixture[] = syntheticF
       };
     }
     evaluation = { ...evaluation, externalCallCount: outbound.successfulCallCount, outboundAttemptCount: outbound.attemptCount };
-    const receipt = outbound.attemptCount === 0 ? createReceipt(fixture, evaluation, contractDigest) : null;
+    const receipt = detectorIsCanonical && outbound.attemptCount === 0 ? createReceipt(fixture, evaluation, contractDigest) : null;
     return {
       fixture,
       evaluation,

@@ -140,7 +140,7 @@ export function ActivationProofWorkspace() {
               ["consentPolicyVersion", "Consent policy", "consent-v1"],
             ].map(([name, label, value]) => <label className="grid gap-2 text-sm font-semibold" key={name}>{label}<input className="min-h-11 rounded-lg border border-[var(--border-strong)] bg-white px-3 font-normal" name={name} defaultValue={value} required /></label>)}
             <label className="grid gap-2 text-sm font-semibold md:col-span-2">Rollback procedure<textarea className="min-h-24 rounded-lg border border-[var(--border-strong)] bg-white p-3 font-normal" name="rollbackProcedure" defaultValue="Restore the last accepted contract digest and replay the clean synthetic corpus." required /></label>
-            <div className="flex flex-wrap items-center gap-3 md:col-span-2"><Button type="submit">Seal synthetic contract</Button>{contract && <Badge tone="pass">REVIEW_READY · {contract.contractDigest.slice(0, 21)}…</Badge>}</div>
+            <div className="flex flex-wrap items-center gap-3 md:col-span-2"><Button type="submit">Seal synthetic contract</Button>{contract && <Badge tone="pass" data-testid="contract-digest">REVIEW_READY · {contract.contractDigest.slice(0, 21)}…</Badge>}</div>
             {contractError && <p className="text-sm text-[var(--fail)] md:col-span-2" role="alert">{contractError}</p>}
           </form>
         </CardContent>
@@ -202,7 +202,7 @@ export function ActivationProofWorkspace() {
           </div>
           {handoffBundle && <Card>
             <CardHeader><div className="flex flex-wrap items-center justify-between gap-3"><Badge tone="evidence">STEP 3 · REDACTED HANDOFF</Badge><Badge tone="neutral">LOCAL REPLAY ONLY</Badge></div><CardTitle className="mt-4">Export and replay without the builder</CardTitle><CardDescription>The bundle embeds the exact contract, all sealed receipts, recovery, and deterministic replay steps. A separate operator can verify it through the documented replay endpoint.</CardDescription></CardHeader>
-            <CardContent><div className="flex flex-wrap gap-3"><Button variant="outline" onClick={downloadHandoff}>Download JSON handoff</Button><Button onClick={replayHandoff}>{replayError ? "Retry handoff replay" : "Replay sealed handoff"}</Button></div>{replayReceipt && <p className="mt-4 text-sm" role="status"><Badge tone={replayReceipt.decision === "MATCH" ? "pass" : "fail"}>{replayReceipt.decision}</Badge> <span className="ml-2 text-[var(--text-muted)]">{replayReceipt.reason} · {replayReceipt.replayRunDigest?.slice(0, 21) ?? "no replay digest"}…</span></p>}{replayError && <p className="mt-4 text-sm text-[var(--fail)]" role="alert">{replayError}</p>}</CardContent>
+            <CardContent><p className="mb-4 break-all font-mono text-xs text-[var(--text-muted)]" data-testid="bundle-digest">Bundle {handoffBundle.bundleDigest}</p><div className="flex flex-wrap gap-3"><Button variant="outline" onClick={downloadHandoff}>Download JSON handoff</Button><Button onClick={replayHandoff}>{replayError ? "Retry handoff replay" : "Replay sealed handoff"}</Button></div>{replayReceipt && <p className="mt-4 text-sm" role="status"><Badge tone={replayReceipt.decision === "MATCH" ? "pass" : "fail"}>{replayReceipt.decision}</Badge> <span className="ml-2 text-[var(--text-muted)]">{replayReceipt.reason} · {replayReceipt.replayRunDigest?.slice(0, 21) ?? "no replay digest"}…</span></p>}{replayError && <p className="mt-4 text-sm text-[var(--fail)]" role="alert">{replayError}</p>}</CardContent>
           </Card>}
         </section>
       )}

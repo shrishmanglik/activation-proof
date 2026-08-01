@@ -75,7 +75,7 @@ Every control emits `DecisionReceipt.v1` with:
 - `dataClass: SYNTHETIC`;
 - stable SHA-256 evidence digest.
 
-Detector health and business result are different fields. A broken detector can never turn an empty result into a clean claim. Receipt sealing is refused if a detector uses the injected outbound capability or the runtime-guarded fetch, WebSocket, EventSource, or XMLHttpRequest surfaces; detector lint also rejects direct transports, runtime module loaders, and dynamic bypasses.
+Detector health and business result are different fields. A broken detector can never turn an empty result into a clean claim. The engine executes only frozen objects from its private canonical detector registry; a replacement evaluator is rejected before code runs or a receipt seals. Canonical detectors also run behind deny-all transport guards and a static policy that rejects direct, captured, computed, runtime-loader, and dynamic transport forms.
 
 ## Local setup
 

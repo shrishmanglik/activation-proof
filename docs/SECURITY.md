@@ -3,8 +3,9 @@
 ## Implemented controls
 
 - Synthetic and tokenized fixtures only.
-- A deny-all outbound capability is injected into every detector; attempts are counted before refusal, fail the run, and prevent receipt sealing.
-- The synchronous detector execution boundary also guards global fetch, WebSocket, EventSource, and XMLHttpRequest surfaces. Detector-specific lint rules reject bare/member/computed transports, dynamic import, `createRequire`/runtime builtin loading, eval-generated transports, and network client imports.
+- Only exact frozen detector objects from a private canonical registry can execute. Replacement evaluators—including pre-captured transport and computed-loader mutations—are rejected before execution and cannot seal a receipt.
+- Canonical detectors receive a deny-all capability; attempts are counted before refusal, fail the run, and prevent receipt sealing. Synchronous execution also guards global fetch, WebSocket, EventSource, and XMLHttpRequest surfaces.
+- Detector-specific lint rules reject bare/member/computed/captured transports, dynamic import, `createRequire`/runtime builtin loading, eval/Function-generated transports, and network client imports.
 - No credential entry UI, production adapter, webhook, or customer contact path.
 - Typed API allowlist for the one repository-owned fixture corpus.
 - Restricted handoff-field detector covering raw email and access-token field classes.

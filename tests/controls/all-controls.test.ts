@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { executeSyntheticCorpus } from "@/application/assurance/engine";
-import type { Detector } from "@/domain/assurance";
 import { syntheticFixtures } from "@/domain/fixtures";
 import { detectorRegistry } from "@/detectors";
+import { createReceipt, digest } from "@/evidence/receipt";
 
 describe("the declared detector registry", () => {
   it("registers exactly one detector for every P0 requirement", () => {
@@ -69,24 +69,20 @@ describe("repeatability", () => {
 
   it("binds the complete normalized finding trace, not only issue codes", () => {
     const fixture = structuredClone(syntheticFixtures.find((item) => item.fixtureId === "CV-R2-BAD")!);
-    const originalDetector = detectorRegistry.get("CV-R2")!;
-    const traceMutation: Detector = {
-      ...originalDetector,
-      version: "mutation-trace",
-      evaluate(input, context) {
-        const result = originalDetector.evaluate(input, context);
-        return { ...result, findings: result.findings.map((entry) => ({ ...entry, recovery: `${entry.recovery} Escalate the revised trace.` })) };
-      },
-    };
-    const mutatedRegistry = new Map(detectorRegistry);
-    mutatedRegistry.set("CV-R2", traceMutation);
     const first = executeSyntheticCorpus([fixture]);
-    const second = executeSyntheticCorpus([fixture], { detectors: mutatedRegistry });
-    expect(first.results[0].receipt?.issueCodes).toEqual(second.results[0].receipt?.issueCodes);
-    expect(first.results[0].receipt?.findingCount).toBe(second.results[0].receipt?.findingCount);
-    expect(first.results[0].receipt?.decisionTraceDigest).not.toBe(second.results[0].receipt?.decisionTraceDigest);
-    expect(first.results[0].receipt?.evidenceDigest).not.toBe(second.results[0].receipt?.evidenceDigest);
-    expect(first.evidenceDigest).not.toBe(second.evidenceDigest);
+    const originalResult = first.results[0];
+    const traceMutation = {
+      ...originalResult.evaluation,
+      findings: originalResult.evaluation.findings.map((entry) => ({ ...entry, recovery: `${entry.recovery} Escalate the revised trace.` })),
+    };
+    const mutatedReceipt = createReceipt(fixture, traceMutation, first.contractDigest);
+    const originalNormalized = [{ fixtureId: fixture.fixtureId, receipt: originalResult.receipt, expectationMet: true, outboundAttemptCount: 0 }];
+    const mutatedNormalized = [{ fixtureId: fixture.fixtureId, receipt: mutatedReceipt, expectationMet: true, outboundAttemptCount: 0 }];
+    expect(originalResult.receipt?.issueCodes).toEqual(mutatedReceipt.issueCodes);
+    expect(originalResult.receipt?.findingCount).toBe(mutatedReceipt.findingCount);
+    expect(originalResult.receipt?.decisionTraceDigest).not.toBe(mutatedReceipt.decisionTraceDigest);
+    expect(originalResult.receipt?.evidenceDigest).not.toBe(mutatedReceipt.evidenceDigest);
+    expect(digest(originalNormalized)).not.toBe(digest(mutatedNormalized));
   });
 
   it("binds the sealed contract digest independently of the compiled fixture", () => {

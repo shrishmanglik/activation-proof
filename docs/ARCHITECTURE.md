@@ -54,10 +54,10 @@ The UI cannot instantiate a provider adapter. A user can author only a bounded, 
 
 - Malformed or undeclared API input fails closed with typed errors.
 - A detector absence yields `UNKNOWN` / `UNHEALTHY`, never a clean pass.
-- Any outbound capability attempt increments a measured counter, fails the run, and prevents receipt sealing before a network call exists. During the synchronous detector contract, the engine also guards global fetch, WebSocket, EventSource, and XMLHttpRequest constructors; detector lint rejects member/computed transports, dynamic import, `createRequire`/builtin-module, eval, and network-import bypasses.
+- The engine executes only exact frozen objects from a private canonical registry. A caller-supplied replacement is classified `DETECTOR_REGISTRY_REPLACEMENT_REJECTED` before its evaluator can run and cannot seal a receipt. Canonical synchronous detectors also receive a deny-all capability and guarded global fetch, WebSocket, EventSource, and XMLHttpRequest constructors; detector lint rejects direct/captured/computed transports, dynamic import, `createRequire`/builtin-module, eval/Function, and network imports.
 - Timeout after possible provider commit is represented by the CV-R7 indeterminate-state control; blind retry is rejected.
 - The release-readiness control verifies deterministic declarations but returns `UNKNOWN` until separately authenticated human approval and recovery-drill receipts exist outside this local product.
-- The UI supports cancellation and retry while retaining the last completed evidence; contract-seal failure preserves the prior contract, replay failure preserves the sealed bundle, and contract changes invalidate the prior run and bundle.
+- The UI supports cancellation and retry while retaining the last completed evidence; tests establish accepted contract/bundle digests, inject malformed reseal/replay responses, prove exact digest retention and download/replay availability, then retry successfully. A successful contract change intentionally invalidates the prior run and bundle.
 - Exported handoffs include deterministic replay and recovery steps; replay rejects a tampered contract or bundle before comparison.
 - The proposed SQL rollback is review-only and explicitly destructive; it is never automatically executed.
 

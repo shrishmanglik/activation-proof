@@ -25,14 +25,16 @@ This manifest separates evidence classes. A stronger class never inherits from a
 - `npm.cmd run e2e:update-screenshot`: exit 0; 2/2 screenshot journeys passed. Desktop overview and 390px completed-workflow images were inspected locally.
 - Secret scan: known-positive pattern matched before the repository scan returned zero matches.
 - Public-context scan: zero employer, application-package, or retired-brand references.
-- Fresh-clone install/test/build/run proof: pending after the branch is pushed.
+- Fresh-clone proof from pushed branch commit `2c3c822a0c483837b922dd0337394c43a3afcc1a`: `npm.cmd ci` installed the lockfile with zero vulnerabilities; 40/40 tests passed; the production build emitted nine routes; and the primary desktop/mobile browser journey passed 6/6. The first install attempt ran from the wrong working directory and exited 1 before installation; it is recorded as harness error and not counted as product proof.
 
 ## GitHub truth
 
 - Repository: `shrishmanglik/activation-proof`.
 - Visibility observed before clone: `PUBLIC`.
-- Branch, commit, and PR: pending.
-- Hosted CI: pending one authorized PR validation. A workflow file is not proof that hosted steps ran.
+- Branch: `dev/activation-proof-initial-build`.
+- Implementation commit: `2c3c822a0c483837b922dd0337394c43a3afcc1a`.
+- Pull request: `https://github.com/shrishmanglik/activation-proof/pull/1`.
+- Hosted CI: pending one authorized PR validation at the time of this manifest update. A workflow file is not proof that hosted steps ran.
 
 ## Provider truth
 

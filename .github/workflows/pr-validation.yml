@@ -1,0 +1,37 @@
+name: PR validation
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: activation-proof-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Unit, control, security, and recovery tests
+        run: npm test
+      - name: Production build
+        run: npm run build
+      - name: Install Chromium for the bounded UI journey
+        run: npx playwright install --with-deps chromium
+      - name: Desktop and mobile end-to-end journey
+        run: npm run e2e

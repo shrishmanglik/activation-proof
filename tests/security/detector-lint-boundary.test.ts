@@ -1,9 +1,14 @@
 import { ESLint } from "eslint";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
 const eslint = new ESLint();
+const detectorFilePath = "src/detectors/mutation.detector.ts";
 
 describe("detector static outbound boundary", () => {
+  beforeAll(async () => {
+    await eslint.lintText("export const detector = true;", { filePath: detectorFilePath });
+  }, 15_000);
+
   it.each([
     "export const bypass = () => globalThis.fetch('https://invalid.example');",
     "export const bypass = () => globalThis['fetch']('https://invalid.example');",
@@ -20,7 +25,7 @@ describe("detector static outbound boundary", () => {
     "export const bypass = () => globalThis.Function('return fetch(1)')();",
     "const { fetch: captured } = globalThis; export const bypass = () => captured('https://invalid.example');",
   ])("rejects a network bypass form", async (source) => {
-    const [result] = await eslint.lintText(source, { filePath: "src/detectors/mutation.detector.ts" });
+    const [result] = await eslint.lintText(source, { filePath: detectorFilePath });
     expect(result.errorCount).toBeGreaterThan(0);
   });
 });

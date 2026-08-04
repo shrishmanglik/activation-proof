@@ -1,6 +1,8 @@
 import { ESLint } from "eslint";
 import { describe, expect, it } from "vitest";
 
+const eslint = new ESLint();
+
 describe("detector static outbound boundary", () => {
   it.each([
     "export const bypass = () => globalThis.fetch('https://invalid.example');",
@@ -18,7 +20,6 @@ describe("detector static outbound boundary", () => {
     "export const bypass = () => globalThis.Function('return fetch(1)')();",
     "const { fetch: captured } = globalThis; export const bypass = () => captured('https://invalid.example');",
   ])("rejects a network bypass form", async (source) => {
-    const eslint = new ESLint();
     const [result] = await eslint.lintText(source, { filePath: "src/detectors/mutation.detector.ts" });
     expect(result.errorCount).toBeGreaterThan(0);
   });
